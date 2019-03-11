@@ -5,22 +5,19 @@
  (preprocess (pps ppx_sexp_conv))
  (libraries hex ptime uuidm uri ezjsonm ocplib-json-typed))
 
-; (library
-;  (name        kraken_rest)
-;  (public_name kraken-rest)
-;  (modules kraken_rest)
-;  (preprocess (pps ppx_sexp_conv))
-;  (libraries
-;   base64
-;   digestif.c
-;   kraken
-;   ptime
-;   uri
-;   logs-async
-;   conduit-async
-;   httpaf
-;   httpaf-async
-;   ocplib-json-typed))
+(library
+ (name        coinbasepro_rest)
+ (public_name coinbasepro-rest)
+ (modules coinbasepro_rest)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries
+  coinbasepro
+  sexplib
+  uuidm
+  uri
+  logs-async
+  ocplib-json-typed
+  fastrest))
 
 (library
  (name        coinbasepro_ws)
