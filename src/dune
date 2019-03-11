@@ -1,0 +1,37 @@
+(library
+ (name        coinbasepro)
+ (public_name coinbasepro)
+ (modules coinbasepro)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries hex ptime uuidm uri ezjsonm ocplib-json-typed))
+
+; (library
+;  (name        kraken_rest)
+;  (public_name kraken-rest)
+;  (modules kraken_rest)
+;  (preprocess (pps ppx_sexp_conv))
+;  (libraries
+;   base64
+;   digestif.c
+;   kraken
+;   ptime
+;   uri
+;   logs-async
+;   conduit-async
+;   httpaf
+;   httpaf-async
+;   ocplib-json-typed))
+
+(library
+ (name        coinbasepro_ws)
+ (public_name coinbasepro-ws)
+ (modules coinbasepro_ws)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries coinbasepro ptime uuidm uri ocplib-json-typed))
+
+(library
+ (name        coinbasepro_ws_async)
+ (public_name coinbasepro-ws-async)
+ (modules coinbasepro_ws_async)
+ (preprocess (pps ppx_sexp_conv))
+ (libraries ezjsonm coinbasepro_ws core async fastws-async))
