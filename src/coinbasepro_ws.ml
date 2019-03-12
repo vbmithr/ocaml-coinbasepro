@@ -27,6 +27,9 @@ type channel_full = {
 let full product_ids =
   { chan = Full ; product_ids }
 
+let level2 product_ids =
+  { chan = Level2 ; product_ids }
+
 let channel_full_encoding =
   let open Json_encoding in
   conv
@@ -195,6 +198,52 @@ let change_encoding =
        (opt "price" strfloat)
        (req "side" side_encoding))
 
+type l2snapshot = {
+  product_id : string ;
+  bids : (float * float) list ;
+  asks : (float * float) list ;
+} [@@deriving sexp]
+
+let l2snapshot_encoding =
+  let open Json_encoding in
+  conv
+    (fun { product_id ; bids ; asks } -> (product_id, bids, asks))
+    (fun (product_id, bids, asks) -> { product_id ; bids ; asks })
+    (obj3
+       (req "product_id" string)
+       (req "bids" (list (tup2 strfloat strfloat)))
+       (req "asks" (list (tup2 strfloat strfloat))))
+
+type l2update = {
+  ts : Ptime.t ;
+  product_id : string ;
+  changes : ([`buy|`sell] * float * float) list ;
+} [@@deriving sexp]
+
+let l2update_encoding =
+  let open Json_encoding in
+  conv
+    (fun { ts ; product_id ; changes } -> (ts, product_id, changes))
+    (fun (ts, product_id, changes) -> { ts ; product_id ; changes })
+    (obj3
+       (req "time" Ptime.encoding)
+       (req "product_id" string)
+       (req "changes" (list (tup3 side_encoding strfloat strfloat))))
+
+type error = {
+  msg : string ;
+  reason : string option ;
+} [@@deriving sexp]
+
+let error_encoding =
+  let open Json_encoding in
+  conv
+    (fun { msg ; reason } -> (msg, reason))
+    (fun (msg, reason) -> { msg ; reason })
+    (obj2
+       (req "message" string)
+       (opt "reason" string))
+
 type t =
   | Subscribe of channel_full list
   | Unsubscribe of channel_full list
@@ -204,6 +253,9 @@ type t =
   | Open of order
   | Match of ord_match
   | Change of change
+  | L2Snapshot of l2snapshot
+  | L2Update of l2update
+  | Error of error
 [@@deriving sexp]
 
 let is_ctrl_msg = function
@@ -213,9 +265,12 @@ let is_ctrl_msg = function
   | _ -> false
 
 let has_seq_gt seq = function
+  | Error _
   | Subscribe _
   | Unsubscribe _
-  | Subscriptions _ -> false
+  | Subscriptions _
+  | L2Snapshot _
+  | L2Update _ -> false
   | Received { sequence ; _ }
   | Done { sequence ; _}
   | Open { sequence ; _ }
@@ -252,6 +307,15 @@ let encoding =
   let change_e =
     merge_objs (obj1 (req "type" (constant "change")))
       change_encoding in
+  let snapshot_e =
+    merge_objs (obj1 (req "type" (constant "snapshot")))
+      l2snapshot_encoding in
+  let l2update_e =
+    merge_objs (obj1 (req "type" (constant "l2update")))
+      l2update_encoding in
+  let error_e =
+    merge_objs (obj1 (req "type" (constant "error")))
+      error_encoding in
   union [
     case sub_e (function Subscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Subscribe t) ;
     case unsub_e (function Unsubscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Unsubscribe t) ;
@@ -261,5 +325,8 @@ let encoding =
     case open_e (function Open t -> Some ((), t) | _ -> None) (fun ((), t) -> Open t) ;
     case match_e (function Match t -> Some ((), t) | _ -> None) (fun ((), t) -> Match t) ;
     case change_e (function Change t -> Some ((), t) | _ -> None) (fun ((), t) -> Change t) ;
+    case snapshot_e (function L2Snapshot t -> Some ((), t) | _ -> None) (fun ((), t) -> L2Snapshot t) ;
+    case l2update_e (function L2Update t -> Some ((), t) | _ -> None) (fun ((), t) -> L2Update t) ;
+    case error_e (function Error t -> Some ((), t) | _ -> None) (fun ((), t) -> Error t) ;
   ]
 

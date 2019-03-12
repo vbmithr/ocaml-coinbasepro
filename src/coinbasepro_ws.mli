@@ -12,6 +12,7 @@ type channel_full = {
 } [@@deriving sexp]
 
 val full : string list -> channel_full
+val level2 : string list -> channel_full
 
 type order = {
   ts : Ptime.t ;
@@ -55,6 +56,23 @@ type change = {
   side : [`buy|`sell] ;
 } [@@deriving sexp]
 
+type l2snapshot = {
+  product_id : string ;
+  bids : (float * float) list ;
+  asks : (float * float) list ;
+} [@@deriving sexp]
+
+type l2update = {
+  ts : Ptime.t ;
+  product_id : string ;
+  changes : ([`buy|`sell] * float * float) list ;
+} [@@deriving sexp]
+
+type error = {
+  msg : string ;
+  reason : string option ;
+} [@@deriving sexp]
+
 type t =
   | Subscribe of channel_full list
   | Unsubscribe of channel_full list
@@ -64,6 +82,9 @@ type t =
   | Open of order
   | Match of ord_match
   | Change of change
+  | L2Snapshot of l2snapshot
+  | L2Update of l2update
+  | Error of error
 [@@deriving sexp]
 
 val is_ctrl_msg : t -> bool

@@ -21,6 +21,18 @@
   coinbasepro-ws
   coinbasepro-ws-async))
 
+(executable
+ (name depth2)
+ (modules depth2)
+ (public_name coinbasepro-depth2)
+ (package coinbasepro-ws-async)
+ (preprocess (pps ppx_jane ppx_sexp_conv))
+ (libraries
+  logs-async-reporter
+  coinbasepro-rest
+  coinbasepro-ws
+  coinbasepro-ws-async))
+
 (test
  (name       test)
  (modules    test)

@@ -18,9 +18,12 @@ let main symbols =
     let start_init = Ivar.create () in
     let inited = Ivar.create () in
     let update_books = function
+      | Error _
       | Subscribe _
       | Unsubscribe _
-      | Subscriptions _ -> assert false
+      | Subscriptions _
+      | L2Snapshot _
+      | L2Update _ -> assert false
       | Received _ -> ()
       | Done _ -> ()
       | Open _ -> ()
