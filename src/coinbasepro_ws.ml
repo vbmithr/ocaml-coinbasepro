@@ -159,6 +159,42 @@ let ord_match_encoding =
        (req "size" strfloat)
        (req "price" strfloat))
 
+type change = {
+  ts : Ptime.t ;
+  sequence : int64 ;
+  order_id : Uuidm.t ;
+  product_id : string ;
+  new_size : float option ;
+  old_size : float option ;
+  new_funds : float option ;
+  old_funds : float option ;
+  price : float option ;
+  side : [`buy|`sell] ;
+} [@@deriving sexp]
+
+let change_encoding =
+  let open Json_encoding in
+  conv
+    (fun { ts ; sequence ; order_id ; product_id ; new_size ;
+           old_size ; new_funds ; old_funds ; price ; side } ->
+      (ts, sequence, order_id, product_id, new_size, old_size,
+       new_funds, old_funds, price, side))
+    (fun (ts, sequence, order_id, product_id, new_size, old_size,
+          new_funds, old_funds, price, side) ->
+      { ts ; sequence ; order_id ; product_id ; new_size ;
+        old_size ; new_funds ; old_funds ; price ; side })
+    (obj10
+       (req "time" Ptime.encoding)
+       (req "sequence" int53)
+       (req "order_id" Uuidm.encoding)
+       (req "product_id" string)
+       (opt "new_size" strfloat)
+       (opt "old_size" strfloat)
+       (opt "new_funds" strfloat)
+       (opt "old_funds" strfloat)
+       (opt "price" strfloat)
+       (req "side" side_encoding))
+
 type t =
   | Subscribe of channel_full list
   | Unsubscribe of channel_full list
@@ -167,7 +203,25 @@ type t =
   | Done of order
   | Open of order
   | Match of ord_match
+  | Change of change
 [@@deriving sexp]
+
+let is_ctrl_msg = function
+  | Subscribe _
+  | Unsubscribe _
+  | Subscriptions _ -> true
+  | _ -> false
+
+let has_seq_gt seq = function
+  | Subscribe _
+  | Unsubscribe _
+  | Subscriptions _ -> false
+  | Received { sequence ; _ }
+  | Done { sequence ; _}
+  | Open { sequence ; _ }
+  | Match { sequence ; _ }
+  | Change { sequence ; _ } ->
+    sequence > seq
 
 let pp ppf t =
   Format.fprintf ppf "%a" Sexplib.Sexp.pp (sexp_of_t t)
@@ -195,6 +249,9 @@ let encoding =
   let match_e =
     merge_objs (obj1 (req "type" (constant "match")))
       ord_match_encoding in
+  let change_e =
+    merge_objs (obj1 (req "type" (constant "change")))
+      change_encoding in
   union [
     case sub_e (function Subscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Subscribe t) ;
     case unsub_e (function Unsubscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Unsubscribe t) ;
@@ -203,5 +260,6 @@ let encoding =
     case done_e (function Done t -> Some ((), t) | _ -> None) (fun ((), t) -> Done t) ;
     case open_e (function Open t -> Some ((), t) | _ -> None) (fun ((), t) -> Open t) ;
     case match_e (function Match t -> Some ((), t) | _ -> None) (fun ((), t) -> Match t) ;
+    case change_e (function Change t -> Some ((), t) | _ -> None) (fun ((), t) -> Change t) ;
   ]
 

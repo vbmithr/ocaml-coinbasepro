@@ -36,8 +36,8 @@ let process_user_cmd w =
   in
   loop ()
 
-let main () =
-  with_connection begin fun r w ->
+let main sandbox =
+  with_connection ~sandbox begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [
@@ -50,9 +50,10 @@ let () =
   Command.async ~summary:"Coinbasepro WS client" begin
     let open Command.Let_syntax in
     [%map_open
-      let () = Logs_async_reporter.set_level_via_param None in
+      let () = Logs_async_reporter.set_level_via_param None
+      and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox" in
       fun () ->
         Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-        main ()
+        main sandbox
     ] end |>
   Command.run

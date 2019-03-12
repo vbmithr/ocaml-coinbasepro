@@ -5,6 +5,9 @@ open Coinbasepro
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.pro.coinbase.com" ()
 
+let sandbox_url =
+  Uri.make ~scheme:"https" ~host:"api-public.sandbox.pro.coinbase.com" ()
+
 type order = {
   price : float ;
   size : float ;
@@ -24,8 +27,8 @@ type book = {
   asks : order list ;
 } [@@deriving sexp]
 
-let int64str =
-  Json_encoding.(conv Int64.to_string Int64.of_string string)
+(* let int64str =
+ *   Json_encoding.(conv Int64.to_string Int64.of_string string) *)
 
 let book_encoding =
   let open Json_encoding in
@@ -33,7 +36,7 @@ let book_encoding =
     (fun { sequence ; bids ; asks } -> (sequence, bids, asks))
     (fun (sequence, bids, asks) -> { sequence ; bids ; asks })
     (obj3
-       (req "sequence" int64str)
+       (req "sequence" int53)
        (req "bids" (list order_encoding))
        (req "asks" (list order_encoding)))
 
@@ -42,8 +45,9 @@ let result_encoding encoding =
     (function Ok v -> v | _ -> invalid_arg "result_encoding")
     (fun v -> Ok v) encoding
 
-let book symbol =
+let book ?(sandbox=false) symbol =
+  let url = if sandbox then sandbox_url else base_url in
   get (result_encoding book_encoding)
     (Uri.with_query'
-       (Uri.with_path base_url ("/products/" ^ symbol ^ "/book"))
+       (Uri.with_path url ("/products/" ^ symbol ^ "/book"))
        ["level", "3"])

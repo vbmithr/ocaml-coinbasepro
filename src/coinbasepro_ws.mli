@@ -42,6 +42,19 @@ type ord_match = {
   price : float ;
 } [@@deriving sexp]
 
+type change = {
+  ts : Ptime.t ;
+  sequence : int64 ;
+  order_id : Uuidm.t ;
+  product_id : string ;
+  new_size : float option ;
+  old_size : float option ;
+  new_funds : float option ;
+  old_funds : float option ;
+  price : float option ;
+  side : [`buy|`sell] ;
+} [@@deriving sexp]
+
 type t =
   | Subscribe of channel_full list
   | Unsubscribe of channel_full list
@@ -50,7 +63,11 @@ type t =
   | Done of order
   | Open of order
   | Match of ord_match
+  | Change of change
 [@@deriving sexp]
+
+val is_ctrl_msg : t -> bool
+val has_seq_gt : int64 -> t -> bool
 
 val pp : Format.formatter -> t -> unit
 val encoding : t Json_encoding.encoding

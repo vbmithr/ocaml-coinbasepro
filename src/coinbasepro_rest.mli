@@ -12,4 +12,4 @@ type book = {
   asks : order list ;
 } [@@deriving sexp]
 
-val book : string -> (get, book, 'a) service
+val book : ?sandbox:bool -> string -> (get, book, 'a) service

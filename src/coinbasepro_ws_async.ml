@@ -5,8 +5,10 @@ open Coinbasepro
 open Coinbasepro_ws
 
 let url = Uri.make ~scheme:"https" ~host:"ws-feed.pro.coinbase.com" ()
+let sandbox_url = Uri.make ~scheme:"https" ~host:"ws-feed-public.sandbox.pro.coinbase.com" ()
 
-let with_connection ?heartbeat f =
+let with_connection ?(sandbox=false) ?heartbeat f =
+  let url = if sandbox then sandbox_url else url in
   let hb_ns = Option.map heartbeat ~f:Time_ns.Span.to_int63_ns in
   Fastws_async.with_connection_ez ?hb_ns url ~f:begin fun r w ->
     let r = Pipe.map r ~f:(fun msg -> Ezjsonm.from_string msg) in
