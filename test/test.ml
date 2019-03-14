@@ -17,7 +17,7 @@ end
 let default_cfg = Filename.concat (Option.value_exn (Sys.getenv "HOME")) ".virtu"
 let cfg =
   List.Assoc.find_exn ~equal:String.equal
-    (Sexplib.Sexp.load_sexp_conv_exn default_cfg Cfg.t_of_sexp) "GDAX"
+    (Sexplib.Sexp.load_sexp_conv_exn default_cfg Cfg.t_of_sexp) "CBPRO"
 
 let () =
   Logs.set_reporter (Logs_async_reporter.reporter ()) ;
@@ -27,6 +27,7 @@ let wrap_request ?(speed=`Quick) n service =
   let auth = {
     Fastrest.key = cfg.Cfg.key ;
     secret = Base64.decode_exn cfg.Cfg.secret ;
+    meta = ["passphrase", cfg.Cfg.passphrase] ;
   } in
   Alcotest_async.test_case n speed begin fun () ->
     Fastrest.request ~auth service >>= function
@@ -36,6 +37,7 @@ let wrap_request ?(speed=`Quick) n service =
 
 let rest = [
   wrap_request "ledgers" (book ~sandbox:true "BTC-EUR") ;
+  wrap_request "accounts" (accounts ~sandbox:true ()) ;
 ]
 
 let () =
