@@ -7,7 +7,7 @@ open Coinbasepro_ws_async
 let src = Logs.Src.create "coinbasepro.ws-test"
     ~doc:"Coinbasepro API - WS test application"
 
-let process_user_cmd w =
+let process_user_cmd ?auth w =
   let process s =
     match String.split s ~on:' ' with
     (* | "unsubscribe" :: chanid :: _ ->
@@ -26,7 +26,9 @@ let process_user_cmd w =
     | [] ->
       Logs_async.err ~src (fun m -> m "Empty command")
     | "full" :: products ->
-      Pipe.write w (Subscribe [full products])
+      Pipe.write w (Subscribe (None, [full products]))
+    | "full_auth" :: products ->
+      Pipe.write w (Subscribe (auth, [full products]))
     | _ ->
       Logs_async.err ~src (fun m -> m "Non Empty command")
   in
@@ -36,12 +38,23 @@ let process_user_cmd w =
   in
   loop ()
 
-let main sandbox =
+let main cfg sandbox =
+  let auth =
+    Option.map
+      (List.Assoc.find cfg "CBPRO" ~equal:String.equal)
+      ~f:begin fun cfg ->
+        let timestamp = Time_ns.(now () |> to_span_since_epoch |> Span.to_int_ms |> fun a -> a // 1000 |> Float.to_string) in
+        auth
+          ~timestamp
+          ~key:cfg.Bs_devkit.Cfg.key
+          ~secret:(Base64.decode_exn cfg.secret)
+          ~passphrase:cfg.passphrase
+      end in
   with_connection ~sandbox begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [
-      process_user_cmd w ;
+      process_user_cmd ?auth w ;
       Pipe.iter r ~f:log_incoming
     ]
   end
@@ -51,9 +64,10 @@ let () =
     let open Command.Let_syntax in
     [%map_open
       let () = Logs_async_reporter.set_level_via_param None
-      and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox" in
+      and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox"
+      and cfg = Bs_devkit.Cfg.param () in
       fun () ->
         Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-        main sandbox
+        main cfg sandbox
     ] end |>
   Command.run

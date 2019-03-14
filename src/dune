@@ -24,7 +24,7 @@
  (public_name coinbasepro-ws)
  (modules coinbasepro_ws)
  (preprocess (pps ppx_sexp_conv))
- (libraries coinbasepro ptime uuidm uri ocplib-json-typed))
+ (libraries coinbasepro ptime base64 digestif.c uuidm uri ocplib-json-typed))
 
 (library
  (name        coinbasepro_ws_async)

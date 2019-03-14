@@ -1,3 +1,14 @@
+type auth = {
+  key : string ;
+  passphrase : string ;
+  timestamp : string ;
+  signature : string ;
+} [@@deriving sexp]
+
+val auth :
+  timestamp:string -> key:string ->
+  secret:string -> passphrase:string -> auth
+
 type channel =
   | Ticker
   | Level2
@@ -74,7 +85,7 @@ type error = {
 } [@@deriving sexp]
 
 type t =
-  | Subscribe of channel_full list
+  | Subscribe of auth option * channel_full list
   | Unsubscribe of channel_full list
   | Subscriptions of channel_full list
   | Received of order

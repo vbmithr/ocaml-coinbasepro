@@ -34,7 +34,7 @@ let main symbols =
         Deferred.unit
       | _ -> Deferred.unit
     in
-    Pipe.write w (Subscribe [level2 symbols]) >>= fun () ->
+    Pipe.write w (Subscribe (None, [level2 symbols])) >>= fun () ->
     Deferred.all_unit [
       Pipe.iter r ~f:process_msgs
     ]

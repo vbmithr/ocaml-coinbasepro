@@ -59,7 +59,7 @@ let main symbols =
         else update_books m ;
         Deferred.unit
     in
-    Pipe.write w (Subscribe [full symbols]) >>= fun () ->
+    Pipe.write w (Subscribe (None, [full symbols])) >>= fun () ->
     Deferred.all_unit [
       Pipe.iter r ~f:process_msgs
     ]

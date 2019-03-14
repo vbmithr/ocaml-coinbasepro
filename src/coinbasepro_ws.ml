@@ -49,14 +49,53 @@ let channel_full_encoding =
       (fun chan -> { chan ; product_ids = [] })
   ]
 
+type auth = {
+  key : string ;
+  passphrase : string [@opaque] ;
+  timestamp : string ;
+  signature : string ;
+} [@@deriving sexp]
+
+let auth_encoding =
+  let open Json_encoding in
+  conv
+    (fun { key ; passphrase ; timestamp ; signature } ->
+       (key, passphrase, timestamp, signature))
+    (fun (key, passphrase, timestamp, signature) ->
+       { key ; passphrase ; timestamp ; signature })
+    (obj4
+       (req "key" string)
+       (req "passphrase" string)
+       (req "timestamp" string)
+       (req "signature" string))
+
+let auth ~timestamp ~key ~secret ~passphrase =
+  let meth = "GET" in
+  let path = "/users/self/verify" in
+  let prehash = timestamp ^ meth ^ path in
+  let signature = Base64.encode_exn
+      Digestif.SHA256.(hmac_string ~key:secret prehash |> to_raw_string) in
+  { key ; passphrase ; timestamp ; signature }
+
 let subscription_encoding =
   let open Json_encoding in
   conv
     (fun chans -> ([], chans))
-    (fun (_, chans) -> chans)
+    (fun (_, a) -> a)
     (obj2
        (dft "product_ids" (list string) [])
        (req "channels" (list channel_full_encoding)))
+
+let authed_subscription_encoding =
+  let open Json_encoding in
+  union [
+    case subscription_encoding
+      (function (None, a) -> Some a | _ -> None)
+      (fun a -> (None, a)) ;
+    case (merge_objs auth_encoding subscription_encoding)
+      (function (Some auth, a) -> Some (auth, a) | _ -> None)
+      (fun (auth, s) -> Some auth, s) ;
+  ]
 
 type order = {
   ts : Ptime.t ;
@@ -245,7 +284,7 @@ let error_encoding =
        (opt "reason" string))
 
 type t =
-  | Subscribe of channel_full list
+  | Subscribe of auth option * channel_full list
   | Unsubscribe of channel_full list
   | Subscriptions of channel_full list
   | Received of order
@@ -285,7 +324,7 @@ let encoding =
   let open Json_encoding in
   let sub_e =
     merge_objs (obj1 (req "type" (constant "subscribe")))
-      subscription_encoding in
+      authed_subscription_encoding in
   let unsub_e =
     merge_objs (obj1 (req "type" (constant "unsubscribe")))
       subscription_encoding in
@@ -317,7 +356,7 @@ let encoding =
     merge_objs (obj1 (req "type" (constant "error")))
       error_encoding in
   union [
-    case sub_e (function Subscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Subscribe t) ;
+    case sub_e (function Subscribe (a, t) -> Some ((), (a, t)) | _ -> None) (fun ((), (a, t)) -> Subscribe (a, t)) ;
     case unsub_e (function Unsubscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Unsubscribe t) ;
     case subs_e (function Subscriptions t -> Some ((), t) | _ -> None) (fun ((), t) -> Subscriptions t) ;
     case received_e (function Received t -> Some ((), t) | _ -> None) (fun ((), t) -> Received t) ;
