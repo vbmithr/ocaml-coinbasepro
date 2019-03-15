@@ -297,6 +297,12 @@ type t =
   | Error of error
 [@@deriving sexp]
 
+let subscribe_full ?auth product_ids =
+  Subscribe (auth, [full product_ids])
+
+let subscribe_level2 ?auth product_ids =
+  Subscribe (auth, [level2 product_ids])
+
 let is_ctrl_msg = function
   | Subscribe _
   | Unsubscribe _

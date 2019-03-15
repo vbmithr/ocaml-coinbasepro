@@ -98,6 +98,9 @@ type t =
   | Error of error
 [@@deriving sexp]
 
+val subscribe_full : ?auth:auth -> string list -> t
+val subscribe_level2 : ?auth:auth -> string list -> t
+
 val is_ctrl_msg : t -> bool
 val has_seq_gt : int64 -> t -> bool
 
