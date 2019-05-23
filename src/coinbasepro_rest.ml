@@ -2,11 +2,90 @@ open Core
 open Fastrest
 open Coinbasepro
 
+module Pair = struct
+  type t = {
+    base: string ;
+    quote: string ;
+  } [@@deriving sexp]
+
+  let compare { base ; quote } { base = base' ; quote = quote' } =
+    match String.compare base base' with
+    | 0 -> String.compare quote quote'
+    | n -> n
+
+  let pp ppf { base ; quote } =
+    Format.fprintf ppf "%s-%s" base quote
+
+  let to_string { base ; quote } =
+    base ^ "-" ^ quote
+
+  let of_string s =
+    match String.split ~on:'-' s with
+    | [base ; quote] -> Some { base ; quote }
+    | _ -> None
+
+  let of_string_exn s =
+    match String.split ~on:'-' s with
+    | [base ; quote] -> { base ; quote }
+    | _ -> invalid_arg "pair_of_string_exn"
+end
+
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.pro.coinbase.com" ()
 
 let sandbox_url =
   Uri.make ~scheme:"https" ~host:"api-public.sandbox.pro.coinbase.com" ()
+
+let result_encoding encoding =
+  let open Json_encoding in
+  union [
+    case
+      (obj1 (req "message" string))
+      (function Ok _ -> None | Error msg -> Some msg)
+      (fun msg -> Error msg) ;
+    case encoding
+      (function Ok v -> Some v | _ -> None)
+      (fun v -> Ok v) ;
+  ]
+
+type product = {
+  id: string ;
+  base_currency: string ;
+  quote_currency: string ;
+  base_min_size: float ;
+  base_max_size: float ;
+  base_increment: float ;
+  quote_increment: float ;
+} [@@deriving sexp]
+
+let product_encoding =
+  let open Json_encoding in
+  conv
+    (fun { id; base_currency; quote_currency; base_min_size; base_max_size;
+           base_increment; quote_increment } ->
+      (),
+      (id, base_currency, quote_currency, base_min_size, base_max_size,
+       base_increment, quote_increment))
+    (fun ((),
+          (id, base_currency, quote_currency, base_min_size, base_max_size,
+           base_increment, quote_increment)) ->
+      { id; base_currency; quote_currency; base_min_size; base_max_size;
+        base_increment; quote_increment })
+    (merge_objs unit
+       (obj7
+          (req "id" string)
+          (req "base_currency" string)
+          (req "quote_currency" string)
+          (req "base_min_size" strfloat)
+          (req "base_max_size" strfloat)
+          (req "base_increment" strfloat)
+          (req "quote_increment" strfloat)))
+
+let products ?(sandbox=false) () =
+  let url = if sandbox then sandbox_url else base_url in
+  get
+    (result_encoding (Json_encoding.list product_encoding))
+    (Uri.with_path url "products")
 
 type order = {
   price : float ;
@@ -39,18 +118,6 @@ let book_encoding =
        (req "sequence" int53)
        (req "bids" (list order_encoding))
        (req "asks" (list order_encoding)))
-
-let result_encoding encoding =
-  let open Json_encoding in
-  union [
-    case
-      (obj1 (req "message" string))
-      (function Ok _ -> None | Error msg -> Some msg)
-      (fun msg -> Error msg) ;
-    case encoding
-      (function Ok v -> Some v | _ -> None)
-      (fun v -> Ok v) ;
-  ]
 
 let book ?(sandbox=false) symbol =
   let url = if sandbox then sandbox_url else base_url in
