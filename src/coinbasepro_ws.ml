@@ -2,6 +2,7 @@ open Sexplib.Std
 open Coinbasepro
 
 type channel =
+  | Heartbeat
   | Ticker
   | Level2
   | User
@@ -12,6 +13,7 @@ type channel =
 let channel_encoding =
   let open Json_encoding in
   string_enum [
+    "heartbeat", Heartbeat ;
     "ticker", Ticker ;
     "level2", Level2 ;
     "user", User ;
@@ -24,11 +26,10 @@ type channel_full = {
   product_ids : string list ;
 } [@@deriving sexp]
 
-let full product_ids =
-  { chan = Full ; product_ids }
-
-let level2 product_ids =
-  { chan = Level2 ; product_ids }
+let heartbeat product_ids = { chan = Heartbeat ; product_ids }
+let full product_ids = { chan = Full ; product_ids }
+let matches product_ids = { chan = Matches ; product_ids }
+let level2 product_ids = { chan = Level2 ; product_ids }
 
 let channel_full_encoding =
   let open Json_encoding in
@@ -48,6 +49,26 @@ let channel_full_encoding =
       (fun { chan ; _ } -> Some chan)
       (fun chan -> { chan ; product_ids = [] })
   ]
+
+type heartbeat = {
+  sequence: int64 ;
+  last_trade_id: int64 ;
+  product_id: string ;
+  time: Ptime.t ;
+} [@@deriving sexp]
+
+let heartbeat_encoding =
+  let open Json_encoding in
+  conv
+    (fun { sequence; last_trade_id; product_id; time } ->
+       (sequence, last_trade_id, product_id, time))
+    (fun (sequence, last_trade_id, product_id, time) ->
+       { sequence; last_trade_id; product_id; time })
+    (obj4
+       (req "sequence" int53)
+       (req "last_trade_id" int53)
+       (req "product_id" string)
+       (req "time" Ptime.encoding))
 
 type auth = {
   key : string ;
@@ -284,12 +305,14 @@ let error_encoding =
        (opt "reason" string))
 
 type t =
+  | Heartbeat of heartbeat
   | Subscribe of auth option * channel_full list
   | Unsubscribe of channel_full list
   | Subscriptions of channel_full list
   | Received of order
   | Done of order
   | Open of order
+  | LastMatch of ord_match
   | Match of ord_match
   | Change of change
   | L2Snapshot of l2snapshot
@@ -316,9 +339,11 @@ let has_seq_gt seq = function
   | Subscriptions _
   | L2Snapshot _
   | L2Update _ -> false
+  | Heartbeat { sequence ; _ }
   | Received { sequence ; _ }
   | Done { sequence ; _}
   | Open { sequence ; _ }
+  | LastMatch { sequence ; _ }
   | Match { sequence ; _ }
   | Change { sequence ; _ } ->
     sequence > seq
@@ -328,6 +353,9 @@ let pp ppf t =
 
 let encoding =
   let open Json_encoding in
+  let heartbeat_e =
+    merge_objs (obj1 (req "type" (constant "heartbeat")))
+      heartbeat_encoding in
   let sub_e =
     merge_objs (obj1 (req "type" (constant "subscribe")))
       authed_subscription_encoding in
@@ -346,6 +374,9 @@ let encoding =
   let open_e =
     merge_objs (obj1 (req "type" (constant "open")))
       order_encoding in
+  let last_match_e =
+    merge_objs (obj1 (req "type" (constant "last_match")))
+      ord_match_encoding in
   let match_e =
     merge_objs (obj1 (req "type" (constant "match")))
       ord_match_encoding in
@@ -362,12 +393,14 @@ let encoding =
     merge_objs (obj1 (req "type" (constant "error")))
       error_encoding in
   union [
+    case heartbeat_e (function Heartbeat h -> Some ((), h) | _ -> None) (fun ((), h) -> Heartbeat h) ;
     case sub_e (function Subscribe (a, t) -> Some ((), (a, t)) | _ -> None) (fun ((), (a, t)) -> Subscribe (a, t)) ;
     case unsub_e (function Unsubscribe t -> Some ((), t) | _ -> None) (fun ((), t) -> Unsubscribe t) ;
     case subs_e (function Subscriptions t -> Some ((), t) | _ -> None) (fun ((), t) -> Subscriptions t) ;
     case received_e (function Received t -> Some ((), t) | _ -> None) (fun ((), t) -> Received t) ;
     case done_e (function Done t -> Some ((), t) | _ -> None) (fun ((), t) -> Done t) ;
     case open_e (function Open t -> Some ((), t) | _ -> None) (fun ((), t) -> Open t) ;
+    case last_match_e (function LastMatch t -> Some ((), t) | _ -> None) (fun ((), t) -> LastMatch t) ;
     case match_e (function Match t -> Some ((), t) | _ -> None) (fun ((), t) -> Match t) ;
     case change_e (function Change t -> Some ((), t) | _ -> None) (fun ((), t) -> Change t) ;
     case snapshot_e (function L2Snapshot t -> Some ((), t) | _ -> None) (fun ((), t) -> L2Snapshot t) ;

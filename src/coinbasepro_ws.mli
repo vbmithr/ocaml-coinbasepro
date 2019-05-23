@@ -10,6 +10,7 @@ val auth :
   secret:string -> passphrase:string -> auth
 
 type channel =
+  | Heartbeat
   | Ticker
   | Level2
   | User
@@ -22,8 +23,17 @@ type channel_full = {
   product_ids : string list ;
 } [@@deriving sexp]
 
+val heartbeat : string list -> channel_full
 val full : string list -> channel_full
+val matches : string list -> channel_full
 val level2 : string list -> channel_full
+
+type heartbeat = {
+  sequence: int64 ;
+  last_trade_id: int64 ;
+  product_id: string ;
+  time: Ptime.t ;
+} [@@deriving sexp]
 
 type order = {
   ts : Ptime.t ;
@@ -85,12 +95,14 @@ type error = {
 } [@@deriving sexp]
 
 type t =
+  | Heartbeat of heartbeat
   | Subscribe of auth option * channel_full list
   | Unsubscribe of channel_full list
   | Subscriptions of channel_full list
   | Received of order
   | Done of order
   | Open of order
+  | LastMatch of ord_match
   | Match of ord_match
   | Change of change
   | L2Snapshot of l2snapshot

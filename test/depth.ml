@@ -19,6 +19,7 @@ let main symbols =
     let inited = Ivar.create () in
     let update_books = function
       | Error _
+      | Heartbeat _
       | Subscribe _
       | Unsubscribe _
       | Subscriptions _
@@ -27,6 +28,7 @@ let main symbols =
       | Received _ -> ()
       | Done _ -> ()
       | Open _ -> ()
+      | LastMatch _ -> ()
       | Match _ -> ()
       | Change _ -> ()
     in
