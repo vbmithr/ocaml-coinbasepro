@@ -1,6 +1,7 @@
 open Core
 open Async
 
+open Coinbasepro
 open Coinbasepro_ws
 open Coinbasepro_ws_async
 
@@ -26,8 +27,10 @@ let process_user_cmd ?auth w =
     | [] ->
       Logs_async.err ~src (fun m -> m "Empty command")
     | "full" :: products ->
+      let products = List.map ~f:Pair.of_string_exn products in
       Pipe.write w (Subscribe (None, [full products]))
     | "full_auth" :: products ->
+      let products = List.map ~f:Pair.of_string_exn products in
       Pipe.write w (Subscribe (auth, [full products]))
     | _ ->
       Logs_async.err ~src (fun m -> m "Non Empty command")

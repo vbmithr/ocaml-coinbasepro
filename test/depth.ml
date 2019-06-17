@@ -1,6 +1,7 @@
 open Core
 open Async
 
+open Coinbasepro
 open Coinbasepro_rest
 open Coinbasepro_ws
 open Coinbasepro_ws_async
@@ -10,7 +11,7 @@ let src = Logs.Src.create "coinbasepro.depth"
 
 (* module UuidMap = Map.Make(Coinbasepro.Uuidm) *)
 
-let main symbols =
+let main (symbols : Pair.t list) =
   with_connection begin fun r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
@@ -69,10 +70,12 @@ let main symbols =
 
 let () =
   Command.async ~summary:"Coinbasepro WS client" begin
+    let pair =
+      Command.(Arg_type.map Param.string ~f:Pair.of_string_exn) in
     let open Command.Let_syntax in
     [%map_open
       let () = Logs_async_reporter.set_level_via_param None
-      and symbols = anon (sequence ("symbols" %: string)) in
+      and symbols = anon (sequence ("symbols" %: pair)) in
       fun () ->
         Logs.set_reporter (Logs_async_reporter.reporter ()) ;
         main symbols

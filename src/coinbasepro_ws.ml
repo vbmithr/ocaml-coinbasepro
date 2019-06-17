@@ -23,7 +23,7 @@ let channel_encoding =
 
 type channel_full = {
   chan: channel ;
-  product_ids : string list ;
+  product_ids : Pair.t list ;
 } [@@deriving sexp]
 
 let heartbeat product_ids = { chan = Heartbeat ; product_ids }
@@ -38,7 +38,7 @@ let channel_full_encoding =
     (fun (chan, product_ids) -> { chan ; product_ids })
     (obj2
        (req "name" channel_encoding)
-       (req "product_ids" (list string)))
+       (req "product_ids" (list Pair.encoding)))
 
 let channel_full_encoding =
   let open Json_encoding in

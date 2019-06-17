@@ -1,18 +1,5 @@
+open Coinbasepro
 open Fastrest
-
-module Pair : sig
-  type t = {
-    base: string ;
-    quote: string ;
-  }  [@@deriving sexp]
-
-  val compare : t -> t -> int
-
-  val pp : Format.formatter -> t -> unit
-  val to_string : t -> string
-  val of_string : string -> t option
-  val of_string_exn : string -> t
-end
 
 type product = {
   id: string ;
@@ -23,6 +10,8 @@ type product = {
   base_increment: float ;
   quote_increment: float ;
 } [@@deriving sexp]
+
+val pair_of_product : product -> Pair.t
 
 val products :
   ?sandbox:bool -> unit -> (get, product list, string) service
@@ -39,7 +28,7 @@ type book = {
   asks : order list ;
 } [@@deriving sexp]
 
-val book : ?sandbox:bool -> string -> (get, book, string) service
+val book : ?sandbox:bool -> Pair.t -> (get, book, string) service
 
 type account = {
   id : Uuidm.t ;

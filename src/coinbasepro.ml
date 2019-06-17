@@ -1,5 +1,38 @@
 open Sexplib.Std
 
+module Pair = struct
+  type t = {
+    base: string ;
+    quote: string ;
+  } [@@deriving sexp]
+
+  let create ~base ~quote = { base ; quote }
+
+  let compare { base ; quote } { base = base' ; quote = quote' } =
+    match String.compare base base' with
+    | 0 -> String.compare quote quote'
+    | n -> n
+
+  let pp ppf { base ; quote } =
+    Format.fprintf ppf "%s-%s" base quote
+
+  let to_string { base ; quote } =
+    base ^ "-" ^ quote
+
+  let of_string s =
+    match String.split_on_char '-' s with
+    | [base ; quote] -> Some { base ; quote }
+    | _ -> None
+
+  let of_string_exn s =
+    match String.split_on_char '-' s with
+    | [base ; quote] -> { base ; quote }
+    | _ -> invalid_arg "pair_of_string_exn"
+
+  let encoding =
+    Json_encoding.(conv to_string of_string_exn string)
+end
+
 module Ezjsonm_encoding = struct
   include Json_encoding.Make(Json_repr.Ezjsonm)
 

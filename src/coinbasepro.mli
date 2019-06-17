@@ -3,6 +3,22 @@ module Ezjsonm_encoding : sig
   val destruct_safe : 'a Json_encoding.encoding -> Ezjsonm.value -> 'a
 end
 
+module Pair : sig
+  type t = {
+    base: string ;
+    quote: string ;
+  }  [@@deriving sexp]
+
+  val create : base:string -> quote:string -> t
+  val compare : t -> t -> int
+
+  val pp : Format.formatter -> t -> unit
+  val to_string : t -> string
+  val of_string : string -> t option
+  val of_string_exn : string -> t
+  val encoding : t Json_encoding.encoding
+end
+
 module Ptime : sig
   include module type of Ptime
     with type t = Ptime.t

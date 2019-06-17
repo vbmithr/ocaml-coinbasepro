@@ -1,6 +1,7 @@
 open Core
 open Async
 
+open Coinbasepro
 open Coinbasepro_rest
 
 module Cfg = struct
@@ -36,7 +37,7 @@ let wrap_request ?(speed=`Quick) n service =
   end
 
 let rest = [
-  wrap_request "ledgers" (book ~sandbox:true "BTC-EUR") ;
+  wrap_request "ledgers" (book ~sandbox:true (Pair.create ~base:"BTC" ~quote:"USD")) ;
   wrap_request "accounts" (accounts ~sandbox:true ()) ;
 ]
 

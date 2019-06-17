@@ -1,3 +1,5 @@
+open Coinbasepro
+
 type auth = {
   key : string ;
   passphrase : string ;
@@ -20,13 +22,13 @@ type channel =
 
 type channel_full = {
   chan: channel ;
-  product_ids : string list ;
+  product_ids : Pair.t list ;
 } [@@deriving sexp]
 
-val heartbeat : string list -> channel_full
-val full : string list -> channel_full
-val matches : string list -> channel_full
-val level2 : string list -> channel_full
+val heartbeat : Pair.t list -> channel_full
+val full : Pair.t list -> channel_full
+val matches : Pair.t list -> channel_full
+val level2 : Pair.t list -> channel_full
 
 type heartbeat = {
   sequence: int64 ;
@@ -110,8 +112,8 @@ type t =
   | Error of error
 [@@deriving sexp]
 
-val subscribe_full : ?auth:auth -> string list -> t
-val subscribe_level2 : ?auth:auth -> string list -> t
+val subscribe_full : ?auth:auth -> Pair.t list -> t
+val subscribe_level2 : ?auth:auth -> Pair.t list -> t
 
 val is_ctrl_msg : t -> bool
 val has_seq_gt : int64 -> t -> bool

@@ -2,34 +2,6 @@ open Core
 open Fastrest
 open Coinbasepro
 
-module Pair = struct
-  type t = {
-    base: string ;
-    quote: string ;
-  } [@@deriving sexp]
-
-  let compare { base ; quote } { base = base' ; quote = quote' } =
-    match String.compare base base' with
-    | 0 -> String.compare quote quote'
-    | n -> n
-
-  let pp ppf { base ; quote } =
-    Format.fprintf ppf "%s-%s" base quote
-
-  let to_string { base ; quote } =
-    base ^ "-" ^ quote
-
-  let of_string s =
-    match String.split ~on:'-' s with
-    | [base ; quote] -> Some { base ; quote }
-    | _ -> None
-
-  let of_string_exn s =
-    match String.split ~on:'-' s with
-    | [base ; quote] -> { base ; quote }
-    | _ -> invalid_arg "pair_of_string_exn"
-end
-
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.pro.coinbase.com" ()
 
@@ -57,6 +29,9 @@ type product = {
   base_increment: float ;
   quote_increment: float ;
 } [@@deriving sexp]
+
+let pair_of_product { base_currency ; quote_currency ; _ } =
+  { Pair.base = base_currency ; quote = quote_currency }
 
 let product_encoding =
   let open Json_encoding in
@@ -119,11 +94,11 @@ let book_encoding =
        (req "bids" (list order_encoding))
        (req "asks" (list order_encoding)))
 
-let book ?(sandbox=false) symbol =
+let book ?(sandbox=false) pair =
   let url = if sandbox then sandbox_url else base_url in
   get (result_encoding book_encoding)
     (Uri.with_query'
-       (Uri.with_path url ("products/" ^ symbol ^ "/book"))
+       (Uri.with_path url ("products/" ^ Pair.to_string pair ^ "/book"))
        ["level", "3"])
 
 type account = {
