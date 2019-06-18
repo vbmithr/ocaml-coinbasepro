@@ -127,31 +127,31 @@ type order = {
   size : float option ;
   remaining_size : float option ;
   price : float option ;
-  side : [`buy|`sell] ;
-  ord_type : [`limit|`market] option ;
-  ord_status : [`filled|`canceled] option ;
+  side : [`Buy | `Sell] ;
+  ord_type : [`Limit | `Market] option ;
+  ord_status : [`Filled | `Canceled] option ;
   funds : float option ;
 } [@@deriving sexp]
 
 let side_encoding =
   let open Json_encoding in
   string_enum [
-    "buy", `buy ;
-    "sell", `sell ;
+    "buy", `Buy ;
+    "sell", `Sell ;
   ]
 
 let ord_type_encoding =
   let open Json_encoding in
   string_enum [
-    "limit", `limit ;
-    "market", `market ;
+    "limit", `Limit ;
+    "market", `Market ;
   ]
 
 let ord_status_encoding =
   let open Json_encoding in
   string_enum [
-    "filled", `filled ;
-    "canceled", `canceled ;
+    "filled", `Filled ;
+    "canceled", `Canceled ;
   ]
 
 let or_empty_string encoding =
@@ -195,7 +195,7 @@ type ord_match = {
   trade_id : int64 ;
   maker_order_id : Uuidm.t ;
   taker_order_id : Uuidm.t ;
-  side : [`buy|`sell] ;
+  side : [`Buy | `Sell] ;
   size : float ;
   price : float ;
 } [@@deriving sexp]
@@ -232,7 +232,7 @@ type change = {
   new_funds : float option ;
   old_funds : float option ;
   price : float option ;
-  side : [`buy|`sell] ;
+  side : [`Buy | `Sell] ;
 } [@@deriving sexp]
 
 let change_encoding =
@@ -277,7 +277,7 @@ let l2snapshot_encoding =
 type l2update = {
   ts : Ptime.t ;
   product_id : string ;
-  changes : ([`buy|`sell] * float * float) list ;
+  changes : ([`Buy | `Sell] * float * float) list ;
 } [@@deriving sexp]
 
 let l2update_encoding =

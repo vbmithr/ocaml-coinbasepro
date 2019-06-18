@@ -27,9 +27,9 @@ let main symbols =
         Deferred.unit
       | L2Update { changes ; _ } ->
         List.iter changes ~f:begin function
-          | `buy, key, data ->
+          | `Buy, key, data ->
             obids := Float.Map.set !obids ~key ~data
-          | `sell, key, data ->
+          | `Sell, key, data ->
             oasks := Float.Map.set !oasks ~key ~data
         end ;
         Deferred.unit
