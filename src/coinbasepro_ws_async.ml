@@ -17,6 +17,8 @@ let connect ?(sandbox=false) () =
       Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
     end in
   let ws_read, client_write = Pipe.create () in
+  don't_wait_for
+    (Pipe.closed client_write >>| fun () -> Pipe.close w) ;
   don't_wait_for @@
   Pipe.transfer ws_read w ~f:begin fun cmd ->
     let doc =
