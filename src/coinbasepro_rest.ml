@@ -130,8 +130,8 @@ let auth (type a) (srv : (a, _, _) service) { key ; secret ; meta } =
     Float.to_string @@
     Time_ns.(Span.to_int_ms (to_span_since_epoch (now ())) // 1000) in
   let meth = match srv.meth with
-    | Get -> "GET"
-    | _ -> "POST" in
+    | `GET -> "GET"
+    | #Httpaf.Method.t -> "POST" in
   let path = Uri.path srv.url in
   let body = match body_hdrs_of_service srv with
     | None -> ""
@@ -147,7 +147,7 @@ let auth (type a) (srv : (a, _, _) service) { key ; secret ; meta } =
       "CB-ACCESS-TIMESTAMP", ts ;
       "CB-ACCESS-PASSPHRASE", passphrase ;
     ] in
-  { params = [] ; headers }
+  { params = Form [] ; headers }
 
 let accounts ?(sandbox=false) () =
   let url = if sandbox then sandbox_url else base_url in

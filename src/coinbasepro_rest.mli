@@ -14,7 +14,7 @@ type product = {
 val pair_of_product : product -> Pair.t
 
 val products :
-  ?sandbox:bool -> unit -> (get, product list, string) service
+  ?sandbox:bool -> unit -> (form, product list, string) service
 
 type order = {
   price : float ;
@@ -28,7 +28,7 @@ type book = {
   asks : order list ;
 } [@@deriving sexp]
 
-val book : ?sandbox:bool -> Pair.t -> (get, book, string) service
+val book : ?sandbox:bool -> Pair.t -> (form, book, string) service
 
 type account = {
   id : Uuidm.t ;
@@ -40,5 +40,5 @@ type account = {
 } [@@deriving sexp]
 
 val accounts :
-  ?sandbox:bool -> unit -> (get, account list, string) service
+  ?sandbox:bool -> unit -> (form, account list, string) service
 
