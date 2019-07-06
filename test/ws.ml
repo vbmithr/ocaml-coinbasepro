@@ -3,7 +3,6 @@ open Async
 
 open Coinbasepro
 open Coinbasepro_ws
-open Coinbasepro_ws_async
 
 let src = Logs.Src.create "coinbasepro.ws-test"
     ~doc:"Coinbasepro API - WS test application"
@@ -53,7 +52,7 @@ let main cfg sandbox =
           ~secret:(Base64.decode_exn cfg.secret)
           ~passphrase:cfg.passphrase
       end in
-  with_connection ~sandbox begin fun r w ->
+  Coinbasepro_ws_async.with_connection_exn ~sandbox begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

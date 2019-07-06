@@ -3,13 +3,12 @@ open Async
 
 open Coinbasepro
 open Coinbasepro_ws
-open Coinbasepro_ws_async
 
 let src = Logs.Src.create "coinbasepro.depth2"
     ~doc:"Coinbasepro API - depth2 test application"
 
 let main symbols =
-  with_connection begin fun r w ->
+  Coinbasepro_ws_async.with_connection_exn begin fun r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
     let process_msgs msg =
