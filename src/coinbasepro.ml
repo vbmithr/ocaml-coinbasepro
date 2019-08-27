@@ -13,6 +13,8 @@ module Pair = struct
     | 0 -> String.compare quote quote'
     | n -> n
 
+  let equal a b = compare a b = 0
+
   let pp ppf { base ; quote } =
     Format.fprintf ppf "%s-%s" base quote
 
