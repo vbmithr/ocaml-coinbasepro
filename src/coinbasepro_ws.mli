@@ -79,16 +79,18 @@ type change = {
   side : [`Buy | `Sell] ;
 } [@@deriving sexp]
 
+type lvl = { price: float; size: float } [@@deriving sexp]
+
 type l2snapshot = {
   product_id : string ;
-  bids : (float * float) list ;
-  asks : (float * float) list ;
+  bids : lvl list ;
+  asks : lvl list ;
 } [@@deriving sexp]
 
 type l2update = {
   ts : Ptime.t ;
   product_id : string ;
-  changes : ([`Buy | `Sell] * float * float) list ;
+  changes : ([`Buy | `Sell] * lvl) list ;
 } [@@deriving sexp]
 
 type error = {

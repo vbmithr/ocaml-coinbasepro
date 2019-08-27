@@ -258,10 +258,26 @@ let change_encoding =
        (opt "price" strfloat)
        (req "side" side_encoding))
 
+type lvl = { price: float; size: float } [@@deriving sexp]
+
+let lvl_encoding =
+  let open Json_encoding in
+  conv
+    (fun { price ; size } -> (price, size))
+    (fun (price, size) -> { price ; size })
+    (tup2 strfloat strfloat)
+
+let side_lvl_encoding =
+  let open Json_encoding in
+  conv
+    (fun (side, { price ; size }) -> (side, price, size))
+    (fun (side, price, size) -> (side, { price ; size }))
+    (tup3 side_encoding strfloat strfloat)
+
 type l2snapshot = {
   product_id : string ;
-  bids : (float * float) list ;
-  asks : (float * float) list ;
+  bids : lvl list ;
+  asks : lvl list ;
 } [@@deriving sexp]
 
 let l2snapshot_encoding =
@@ -271,13 +287,13 @@ let l2snapshot_encoding =
     (fun (product_id, bids, asks) -> { product_id ; bids ; asks })
     (obj3
        (req "product_id" string)
-       (req "bids" (list (tup2 strfloat strfloat)))
-       (req "asks" (list (tup2 strfloat strfloat))))
+       (req "bids" (list lvl_encoding))
+       (req "asks" (list lvl_encoding)))
 
 type l2update = {
   ts : Ptime.t ;
   product_id : string ;
-  changes : ([`Buy | `Sell] * float * float) list ;
+  changes : ([`Buy | `Sell] * lvl) list ;
 } [@@deriving sexp]
 
 let l2update_encoding =
@@ -288,7 +304,7 @@ let l2update_encoding =
     (obj3
        (req "time" Ptime.encoding)
        (req "product_id" string)
-       (req "changes" (list (tup3 side_encoding strfloat strfloat))))
+       (req "changes" (list side_lvl_encoding)))
 
 type error = {
   msg : string ;

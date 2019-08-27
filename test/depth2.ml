@@ -16,20 +16,20 @@ let main symbols =
       match msg with
       | L2Snapshot { bids; asks; _ } ->
         obids := List.fold_left bids
-            ~init:Float.Map.empty ~f:begin fun a (key, data) ->
-            Float.Map.set a ~key ~data
+            ~init:Float.Map.empty ~f:begin fun a { price; size } ->
+            Float.Map.set a ~key:price ~data:size
           end ;
         oasks := List.fold_left asks
-            ~init:Float.Map.empty ~f:begin fun a (key, data) ->
-            Float.Map.set a ~key ~data
+            ~init:Float.Map.empty ~f:begin fun a { price; size } ->
+            Float.Map.set a ~key:price ~data:size
           end ;
         Deferred.unit
       | L2Update { changes ; _ } ->
         List.iter changes ~f:begin function
-          | `Buy, key, data ->
-            obids := Float.Map.set !obids ~key ~data
-          | `Sell, key, data ->
-            oasks := Float.Map.set !oasks ~key ~data
+          | `Buy, { price; size } ->
+            obids := Float.Map.set !obids ~key:price ~data:size
+          | `Sell, { price; size } ->
+            oasks := Float.Map.set !oasks ~key:price ~data:size
         end ;
         Deferred.unit
       | _ -> Deferred.unit
