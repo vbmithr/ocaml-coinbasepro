@@ -37,6 +37,7 @@ type account = {
   available : float ;
   hold : float ;
   profile_id : Uuidm.t ;
+  trading_enabled: bool ;
 } [@@deriving sexp]
 
 val accounts :

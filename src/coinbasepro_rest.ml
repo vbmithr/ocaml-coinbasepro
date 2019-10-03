@@ -108,22 +108,24 @@ type account = {
   available : float ;
   hold : float ;
   profile_id : Uuidm.t ;
+  trading_enabled: bool ;
 } [@@deriving sexp]
 
 let account_encoding =
   let open Json_encoding in
   conv
-    (fun { id ; currency ; balance ; available ; hold ; profile_id } ->
-       (id, currency, balance, available, hold, profile_id))
-    (fun (id, currency, balance, available, hold, profile_id) ->
-       { id ; currency ; balance ; available ; hold ; profile_id })
-    (obj6
+    (fun { id ; currency ; balance ; available ; hold ; profile_id; trading_enabled } ->
+       (id, currency, balance, available, hold, profile_id, trading_enabled))
+    (fun (id, currency, balance, available, hold, profile_id, trading_enabled) ->
+       { id ; currency ; balance ; available ; hold ; profile_id ; trading_enabled })
+    (obj7
        (req "id" Uuidm.encoding)
        (req "currency" string)
        (req "balance" strfloat)
        (req "available" strfloat)
        (req "hold" strfloat)
-       (req "profile_id" Uuidm.encoding))
+       (req "profile_id" Uuidm.encoding)
+       (req "trading_enabled" bool))
 
 let auth (type a) (srv : (a, _, _) service) { key ; secret ; meta } =
   let ts =
