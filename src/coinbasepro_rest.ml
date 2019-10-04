@@ -13,8 +13,8 @@ let result_encoding encoding =
   union [
     case
       (obj1 (req "message" string))
-      (function Ok _ -> None | Error msg -> Some msg)
-      (fun msg -> Error msg) ;
+      (function Ok _ -> None | Error msg -> Some (Error.to_string_hum msg))
+      (fun msg -> Error (Error.of_string msg)) ;
     case encoding
       (function Ok v -> Some v | _ -> None)
       (fun v -> Ok v) ;
@@ -127,7 +127,7 @@ let account_encoding =
        (req "profile_id" Uuidm.encoding)
        (req "trading_enabled" bool))
 
-let auth (type a) (srv : (a, _, _) service) { key ; secret ; meta } =
+let auth (type a) (srv : (a, _) service) { key ; secret ; meta } =
   let ts =
     Float.to_string @@
     Time_ns.(Span.to_int_ms (to_span_since_epoch (now ())) // 1000) in
