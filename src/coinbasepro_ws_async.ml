@@ -10,8 +10,28 @@ let sandbox_url = Uri.make ~scheme:"https" ~host:"ws-feed-public.sandbox.pro.coi
 let src = Logs.Src.create "cbpro.ws.async"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let connect ?(sandbox=false) () =
-  let url = if sandbox then sandbox_url else url in
+module T = struct
+  type t = {
+    r: Coinbasepro_ws.t Pipe.Reader.t ;
+    w: Coinbasepro_ws.t Pipe.Writer.t ;
+    cleaned_up: unit Deferred.t ;
+  }
+
+  let create r w cleaned_up = { r; w; cleaned_up }
+
+  module Address = struct
+    include Uri_sexp
+    let equal = Uri.equal
+  end
+
+  let is_closed { r; _ } = Pipe.is_closed r
+  let close { r; w; cleaned_up } =
+    Pipe.close w ; Pipe.close_read r ; cleaned_up
+  let close_finished { cleaned_up; _ } = cleaned_up
+end
+include T
+
+let connect url =
   Deferred.Or_error.map (Fastws_async.EZ.connect url)
     ~f:begin fun { r; w; cleaned_up } ->
       let client_read = Pipe.map r ~f:begin fun msg ->
@@ -29,11 +49,18 @@ let connect ?(sandbox=false) () =
         Log.debug (fun m -> m "-> %s" doc) ;
         doc
       end ;
-      (client_read, client_write, cleaned_up)
+      create client_read client_write cleaned_up
     end
 
-let connect_exn ?sandbox () =
-  connect ?sandbox () >>= function
+module Persistent = struct
+  include Persistent_connection_kernel.Make(T)
+
+  let create' ~server_name ?on_event ?retry_delay =
+    create ~server_name ?on_event ?retry_delay ~connect
+end
+
+let connect_exn url =
+  connect url >>= function
   | Error e -> Error.raise e
   | Ok a -> return a
 
