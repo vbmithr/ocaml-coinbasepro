@@ -73,7 +73,7 @@ let () =
       Command.(Arg_type.map Param.string ~f:Pair.of_string_exn) in
     let open Command.Let_syntax in
     [%map_open
-      let () = Logs_async_reporter.set_level_via_param None
+      let () = Logs_async_reporter.set_level_via_param []
       and symbols = anon (sequence ("symbols" %: pair)) in
       fun () ->
         Logs.set_reporter (Logs_async_reporter.reporter ()) ;

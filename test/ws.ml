@@ -65,7 +65,7 @@ let () =
   Command.async ~summary:"Coinbasepro WS client" begin
     let open Command.Let_syntax in
     [%map_open
-      let () = Logs_async_reporter.set_level_via_param None
+      let () = Logs_async_reporter.set_level_via_param []
       and sandbox = flag "sandbox" no_arg ~doc:" Use sandbox"
       and cfg = Bs_devkit.Cfg.param () in
       fun () ->
