@@ -43,3 +43,54 @@ type account = {
 val accounts :
   ?sandbox:bool -> unit -> (form, account list) service
 
+type ledger = {
+  id: int64 ;
+  created_at: Ptime.t ;
+  amount: float ;
+  balance: float ;
+  typ: ledger_type;
+  details: details ;
+}
+
+and ledger_type =
+  | Transfer
+  | Match
+  | Fee
+  | Rebate
+  | Conversion
+
+and details = {
+  order_id: Uuidm.t ;
+  trade_id: int64 ;
+  product_id: string ;
+} [@@deriving sexp]
+
+val ledger_encoding : ledger Json_encoding.encoding
+
+val ledger :
+  ?sandbox:bool -> Uuidm.t -> (form, ledger list) service
+
+type hold = {
+  id: Uuidm.t ;
+  account_id: Uuidm.t ;
+  created_at: Ptime.t ;
+  updated_at: Ptime.t ;
+  amount: float ;
+  typ: hold_type;
+  ref_id: Uuidm.t ;
+}
+
+and hold_type =
+  | Order
+  | Transfer
+
+val hold :
+  ?sandbox:bool -> Uuidm.t -> (form, hold list) service
+
+type stp =
+  | DecreaseAndCancel
+  | CancelOldest
+  | CancelNewest
+  | CancelBoth
+
+val stp_encoding : stp Json_encoding.encoding

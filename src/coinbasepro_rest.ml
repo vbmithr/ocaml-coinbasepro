@@ -1,24 +1,13 @@
 open Core
 open Fastrest
 open Coinbasepro
+open Json_encoding
 
 let base_url =
   Uri.make ~scheme:"https" ~host:"api.pro.coinbase.com" ()
 
 let sandbox_url =
   Uri.make ~scheme:"https" ~host:"api-public.sandbox.pro.coinbase.com" ()
-
-let result_encoding encoding =
-  let open Json_encoding in
-  union [
-    case
-      (obj1 (req "message" string))
-      (function Ok _ -> None | Error msg -> Some (Error.to_string_hum msg))
-      (fun msg -> Error (Error.of_string msg)) ;
-    case encoding
-      (function Ok v -> Some v | _ -> None)
-      (fun v -> Ok v) ;
-  ]
 
 type product = {
   id: string ;
@@ -33,8 +22,18 @@ type product = {
 let pair_of_product { base_currency ; quote_currency ; _ } =
   { Pair.base = base_currency ; quote = quote_currency }
 
+let result_encoding encoding =
+  union [
+    case
+      (obj1 (req "message" string))
+      (function Ok _ -> None | Error msg -> Some (Error.to_string_hum msg))
+      (fun msg -> Error (Error.of_string msg)) ;
+    case encoding
+      (function Ok v -> Some v | _ -> None)
+      (fun v -> Ok v) ;
+  ]
+
 let product_encoding =
-  let open Json_encoding in
   conv
     (fun { id; base_currency; quote_currency; base_min_size; base_max_size;
            base_increment; quote_increment } ->
@@ -59,7 +58,7 @@ let product_encoding =
 let products ?(sandbox=false) () =
   let url = if sandbox then sandbox_url else base_url in
   get
-    (result_encoding (Json_encoding.list product_encoding))
+    (result_encoding (list product_encoding))
     (Uri.with_path url "products")
 
 type order = {
@@ -69,7 +68,6 @@ type order = {
 } [@@deriving sexp]
 
 let order_encoding =
-  let open Json_encoding in
   conv
     (fun { price ; size ; order_id } -> price, size, order_id)
     (fun (price, size, order_id) -> { price ; size ; order_id })
@@ -81,11 +79,9 @@ type book = {
   asks : order list ;
 } [@@deriving sexp]
 
-(* let int64str =
- *   Json_encoding.(conv Int64.to_string Int64.of_string string) *)
+let int64str = conv Int64.to_string Int64.of_string string
 
 let book_encoding =
-  let open Json_encoding in
   conv
     (fun { sequence ; bids ; asks } -> (sequence, bids, asks))
     (fun (sequence, bids, asks) -> { sequence ; bids ; asks })
@@ -112,7 +108,6 @@ type account = {
 } [@@deriving sexp]
 
 let account_encoding =
-  let open Json_encoding in
   conv
     (fun { id ; currency ; balance ; available ; hold ; profile_id; trading_enabled } ->
        (id, currency, balance, available, hold, profile_id, trading_enabled))
@@ -154,5 +149,120 @@ let auth (type a) (srv : (a, _) service) { key ; secret ; meta } =
 let accounts ?(sandbox=false) () =
   let url = if sandbox then sandbox_url else base_url in
   get ~auth
-    (result_encoding (Json_encoding.list account_encoding))
+    (result_encoding (list account_encoding))
     (Uri.with_path url "accounts")
+
+type ledger = {
+  id: int64 ;
+  created_at: Ptime.t ;
+  amount: float ;
+  balance: float ;
+  typ: ledger_type;
+  details: details ;
+}
+
+and ledger_type =
+  | Transfer
+  | Match
+  | Fee
+  | Rebate
+  | Conversion
+
+and details = {
+  order_id: Uuidm.t ;
+  trade_id: int64 ;
+  product_id: string ;
+} [@@deriving sexp]
+
+type hold = {
+  id: Uuidm.t ;
+  account_id: Uuidm.t ;
+  created_at: Ptime.t ;
+  updated_at: Ptime.t ;
+  amount: float ;
+  typ: hold_type;
+  ref_id: Uuidm.t ;
+}
+
+and hold_type =
+  | Order
+  | Transfer
+
+let ledger_type_encoding =
+  string_enum [
+    "transfer", (Transfer : ledger_type) ;
+    "match", Match ;
+    "fee", Fee ;
+    "rebate", Rebate ;
+    "conversion", Conversion
+  ]
+
+let details_encoding =
+  conv
+    (fun { order_id; trade_id; product_id } -> (order_id, trade_id, product_id))
+    (fun (order_id, trade_id, product_id) -> { order_id; trade_id; product_id })
+    (obj3
+       (req "order_id" Uuidm.encoding)
+       (req "trade_id" int64str)
+       (req "product_id" string))
+
+let ledger_encoding =
+  conv
+    (fun { id; created_at; amount; balance; typ; details } ->
+       (id, created_at, amount, balance, typ, details))
+    (fun (id, created_at, amount, balance, typ, details) ->
+       { id; created_at; amount; balance; typ; details })
+    (obj6
+       (req "id" int53)
+       (req "created_at" Ptime.encoding)
+       (req "amount" strfloat)
+       (req "balance" strfloat)
+       (req "type" ledger_type_encoding)
+       (req "details" details_encoding))
+
+let ledger ?(sandbox=false) account_id =
+  let url = if sandbox then sandbox_url else base_url in
+  get ~auth
+    (result_encoding (list ledger_encoding))
+    (Format.kasprintf (Uri.with_path url) "accounts/%a/ledger" Uuidm.pp account_id)
+
+let hold_type_encoding =
+  string_enum [
+    "transfer", (Transfer : hold_type) ;
+    "order", Order ;
+  ]
+
+let hold_encoding =
+  conv
+    (fun { id; account_id; created_at; updated_at; amount; typ; ref_id } ->
+       (id, account_id, created_at, updated_at, amount, typ, ref_id))
+    (fun (id, account_id, created_at, updated_at, amount, typ, ref_id) ->
+       { id; account_id; created_at; updated_at; amount; typ; ref_id })
+    (obj7
+       (req "id" Uuidm.encoding)
+       (req "account_id" Uuidm.encoding)
+       (req "created_at" Ptime.encoding)
+       (req "updated_at" Ptime.encoding)
+       (req "amount" strfloat)
+       (req "type" hold_type_encoding)
+       (req "ref" Uuidm.encoding))
+
+let hold ?(sandbox=false) account_id =
+  let url = if sandbox then sandbox_url else base_url in
+  get ~auth
+    (result_encoding (list hold_encoding))
+    (Format.kasprintf (Uri.with_path url) "accounts/%a/holds" Uuidm.pp account_id)
+
+type stp =
+  | DecreaseAndCancel
+  | CancelOldest
+  | CancelNewest
+  | CancelBoth
+
+let stp_encoding =
+  string_enum [
+    "dc", DecreaseAndCancel ;
+    "co", CancelOldest ;
+    "cn", CancelNewest ;
+    "cb", CancelBoth ;
+  ]

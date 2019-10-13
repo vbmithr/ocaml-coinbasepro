@@ -24,21 +24,36 @@ let () =
   Logs.set_reporter (Logs_async_reporter.reporter ()) ;
   Logs.set_level (Some Debug)
 
+let auth = {
+  Fastrest.key = cfg.Cfg.key ;
+  secret = Base64.decode_exn cfg.Cfg.secret ;
+  meta = ["passphrase", cfg.Cfg.passphrase] ;
+}
+
 let wrap_request ?(speed=`Quick) n service =
-  let auth = {
-    Fastrest.key = cfg.Cfg.key ;
-    secret = Base64.decode_exn cfg.Cfg.secret ;
-    meta = ["passphrase", cfg.Cfg.passphrase] ;
-  } in
   Alcotest_async.test_case n speed begin fun () ->
-    Fastrest.request ~auth service >>= function
-    | Ok _v -> Deferred.unit
-    | Error _ -> failwith ""
+    (Fastrest.request ~auth service) |>
+    Deferred.Or_error.ignore |>
+    Deferred.Or_error.ok_exn
+  end
+
+let wrap_request_light ?(speed=`Quick) n f =
+  Alcotest_async.test_case ~timeout:(Time.Span.of_int_sec 10) n speed begin fun () ->
+    f () |>
+    Deferred.Or_error.ignore |>
+    Deferred.Or_error.ok_exn
+  end
+
+let accounts_full () =
+  Fastrest.request ~auth (accounts ~sandbox:true ()) >>=?
+  Deferred.Or_error.List.map ~f:begin fun (a:account) ->
+    Fastrest.request ~auth (ledger ~sandbox:true a.id) >>=? fun _ ->
+    Fastrest.request ~auth (hold ~sandbox:true a.id)
   end
 
 let rest = [
-  wrap_request "ledgers" (book ~sandbox:true (Pair.create ~base:"BTC" ~quote:"USD")) ;
-  wrap_request "accounts" (accounts ~sandbox:true ()) ;
+  wrap_request "book" (book ~sandbox:true (Pair.create ~base:"BTC" ~quote:"USD")) ;
+  wrap_request_light "accounts" (accounts_full)
 ]
 
 let () =
