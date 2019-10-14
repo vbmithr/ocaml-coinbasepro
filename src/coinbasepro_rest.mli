@@ -134,6 +134,9 @@ module Fill : sig
     fee: float ;
     settled: bool ;
     side: Side.t ;
+    user_id: string ;
+    profile_id: Uuidm.t ;
+    usd_volume: float ;
   } [@@deriving sexp_of]
 
   val encoding : t Json_encoding.encoding

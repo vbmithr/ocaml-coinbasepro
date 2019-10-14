@@ -352,18 +352,13 @@ module Fill = struct
     fee: float ;
     settled: bool ;
     side: Side.t ;
+    user_id: string ;
+    profile_id: Uuidm.t ;
+    usd_volume: float ;
   } [@@deriving sexp_of]
 
   let encoding =
-    conv
-      (fun { trade_id; product_id; price; size; order_id; created_at;
-             liquidity; fee; settled; side } ->
-        (trade_id, product_id, price, size, order_id, created_at, liquidity,
-         fee, settled, side))
-      (fun (trade_id, product_id, price, size, order_id, created_at, liquidity,
-            fee, settled, side) ->
-        { trade_id; product_id; price; size; order_id; created_at;
-          liquidity; fee; settled; side })
+    merge_objs
       (obj10
          (req "trade_id" int53)
          (req "product_id" Pair.encoding)
@@ -375,6 +370,22 @@ module Fill = struct
          (req "fee" strfloat)
          (req "settled" bool)
          (req "side" side_encoding))
+      (obj3
+         (req "user_id" string)
+         (req "profile_id" Uuidm.encoding)
+         (req "usd_volume" strfloat))
+
+  let encoding =
+    conv
+      (fun { trade_id; product_id; price; size; order_id; created_at;
+             liquidity; fee; settled; side; user_id; profile_id; usd_volume } ->
+        ((trade_id, product_id, price, size, order_id, created_at, liquidity,
+         fee, settled, side), (user_id, profile_id, usd_volume)))
+      (fun ((trade_id, product_id, price, size, order_id, created_at, liquidity,
+            fee, settled, side), (user_id, profile_id, usd_volume)) ->
+        { trade_id; product_id; price; size; order_id; created_at;
+          liquidity; fee; settled; side; user_id; profile_id; usd_volume })
+      encoding
 
   let get ?(sandbox=false) =
     let url = if sandbox then sandbox_url else base_url in
