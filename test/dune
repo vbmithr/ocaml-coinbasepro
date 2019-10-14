@@ -7,6 +7,7 @@
  (libraries
   bs-devkit
   logs-async-reporter
+  coinbasepro-rest
   coinbasepro-ws
   coinbasepro-ws-async))
 

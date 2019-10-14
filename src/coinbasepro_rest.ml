@@ -1,5 +1,6 @@
 open Core
 open Fastrest
+open Fixtypes
 open Coinbasepro
 open Json_encoding
 
@@ -122,14 +123,14 @@ let account_encoding =
        (req "profile_id" Uuidm.encoding)
        (req "trading_enabled" bool))
 
-let auth (type a) (srv : (a, _) service) { key ; secret ; meta } =
+let auth srv { key ; secret ; meta } =
   let ts =
     Float.to_string @@
     Time_ns.(Span.to_int_ms (to_span_since_epoch (now ())) // 1000) in
   let meth = match srv.meth with
     | `GET -> "GET"
     | #Httpaf.Method.t -> "POST" in
-  let path = Uri.path srv.url in
+  let path = Uri.path_and_query srv.url in
   let body = match body_hdrs_of_service srv with
     | None -> ""
     | Some (_, body) -> body in
@@ -144,7 +145,7 @@ let auth (type a) (srv : (a, _) service) { key ; secret ; meta } =
       "CB-ACCESS-TIMESTAMP", ts ;
       "CB-ACCESS-PASSPHRASE", passphrase ;
     ] in
-  { params = Form [] ; headers }
+  { params = srv.params ; headers }
 
 let accounts ?(sandbox=false) () =
   let url = if sandbox then sandbox_url else base_url in
@@ -171,7 +172,7 @@ and ledger_type =
 and details = {
   order_id: Uuidm.t ;
   trade_id: int64 ;
-  product_id: string ;
+  product_id: Pair.t ;
 } [@@deriving sexp]
 
 type hold = {
@@ -204,7 +205,7 @@ let details_encoding =
     (obj3
        (req "order_id" Uuidm.encoding)
        (req "trade_id" int64str)
-       (req "product_id" string))
+       (req "product_id" Pair.encoding))
 
 let ledger_encoding =
   conv
@@ -258,6 +259,7 @@ type stp =
   | CancelOldest
   | CancelNewest
   | CancelBoth
+[@@deriving sexp_of]
 
 let stp_encoding =
   string_enum [
@@ -266,3 +268,123 @@ let stp_encoding =
     "cn", CancelNewest ;
     "cb", CancelBoth ;
   ]
+
+module Order = struct
+  type t = {
+    id: Uuidm.t ;
+    price: float ;
+    size: float ;
+    product_id: Pair.t ;
+    side: Side.t ;
+    stp: stp ;
+    typ: OrdType.t ;
+    time_in_force: TimeInForce.t ;
+    post_only: bool ;
+    created_at: Ptime.t ;
+    fill_fees: float ;
+    filled_size: float ;
+    executed_value: float ;
+    status: OrdStatus.t ;
+    settled: bool ;
+  } [@@deriving sexp_of]
+
+  let encoding =
+    merge_objs
+      (obj10
+         (req "id" Uuidm.encoding)
+         (req "price" strfloat)
+         (req "size" strfloat)
+         (req "product_id" Pair.encoding)
+         (req "side" side_encoding)
+         (dft "stp" stp_encoding DecreaseAndCancel)
+         (req "type" ord_type_encoding)
+         (req "time_in_force" time_in_force_encoding)
+         (req "post_only" bool)
+         (req "created_at" Ptime.encoding))
+      (obj5
+         (req "fill_fees" strfloat)
+         (req "filled_size" strfloat)
+         (req "executed_value" strfloat)
+         (req "status" ord_status_encoding)
+         (req "settled" bool))
+
+  let encoding =
+    conv
+      (fun { id; price; size; product_id; side; stp; typ; time_in_force;
+             post_only; created_at; fill_fees; filled_size; executed_value;
+             status; settled } ->
+        (id, price, size, product_id, side, stp, typ, time_in_force, post_only, created_at),
+        (fill_fees, filled_size, executed_value, status, settled))
+      (fun ((id, price, size, product_id, side, stp, typ, time_in_force, post_only, created_at),
+            (fill_fees, filled_size, executed_value, status, settled)) ->
+        { id; price; size; product_id; side; stp; typ; time_in_force;
+          post_only; created_at; fill_fees; filled_size; executed_value;
+          status; settled })
+      encoding
+
+  let get_all ?(sandbox=false) () =
+    let url = if sandbox then sandbox_url else base_url in
+    get ~auth
+      (result_encoding (list encoding))
+      (Format.kasprintf (Uri.with_path url) "orders")
+
+  let get ?(sandbox=false) =
+    let url = if sandbox then sandbox_url else base_url in function
+      | `Client id ->
+        get ~auth
+          (result_encoding encoding)
+          (Format.kasprintf (Uri.with_path url) "orders/client:%a" Uuidm.pp id)
+      | `Server id ->
+        get ~auth
+          (result_encoding encoding)
+          (Format.kasprintf (Uri.with_path url) "orders/%a" Uuidm.pp id)
+end
+
+module Fill = struct
+  type t = {
+    trade_id: int64 ;
+    product_id: Pair.t ;
+    price: float ;
+    size: float ;
+    order_id: Uuidm.t ;
+    created_at: Ptime.t ;
+    liquidity: LastLiquidityInd.t ;
+    fee: float ;
+    settled: bool ;
+    side: Side.t ;
+  } [@@deriving sexp_of]
+
+  let encoding =
+    conv
+      (fun { trade_id; product_id; price; size; order_id; created_at;
+             liquidity; fee; settled; side } ->
+        (trade_id, product_id, price, size, order_id, created_at, liquidity,
+         fee, settled, side))
+      (fun (trade_id, product_id, price, size, order_id, created_at, liquidity,
+            fee, settled, side) ->
+        { trade_id; product_id; price; size; order_id; created_at;
+          liquidity; fee; settled; side })
+      (obj10
+         (req "trade_id" int53)
+         (req "product_id" Pair.encoding)
+         (req "price" strfloat)
+         (req "size" strfloat)
+         (req "order_id" Uuidm.encoding)
+         (req "created_at" Ptime.encoding)
+         (req "liquidity" liquidity_encoding)
+         (req "fee" strfloat)
+         (req "settled" bool)
+         (req "side" side_encoding))
+
+  let get ?(sandbox=false) =
+    let url = if sandbox then sandbox_url else base_url in
+    function
+    | `OrderID oids ->
+      get ~auth
+        (result_encoding (list encoding))
+        Uri.(with_query (with_path url "fills") ["order_id", List.map ~f:Uuidm.to_string oids])
+    | `ProductID pairs ->
+      get ~auth
+        (result_encoding (list encoding))
+        Uri.(with_query (with_path url "fills") ["product_id", List.map ~f:Pair.to_string pairs])
+end

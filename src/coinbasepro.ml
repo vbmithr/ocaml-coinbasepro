@@ -89,9 +89,42 @@ module Uuidm = struct
       string
 end
 
+open Json_encoding
+open Fixtypes
+
 let strfloat =
-  let open Json_encoding in
   union [
     case float (fun s -> Some s) (fun s -> s) ;
     case string (fun s -> Some (string_of_float s)) float_of_string ;
+  ]
+
+let side_encoding =
+  string_enum [
+    "buy", Side.Buy ;
+    "sell", Side.Sell ;
+  ]
+
+let ord_type_encoding =
+  string_enum [
+    "limit", OrdType.Limit ;
+    "market", OrdType.Market ;
+  ]
+
+let time_in_force_encoding =
+  string_enum [
+    "GTC", TimeInForce.GoodTillCancel ;
+    "GTT", GoodTillDate ;
+    "IOC", ImmediateOrCancel ;
+    "FOK", FillOrKill
+  ]
+
+let ord_status_encoding =
+  string_enum [
+    "open", OrdStatus.New
+  ]
+
+let liquidity_encoding =
+  string_enum [
+    "M", LastLiquidityInd.AddedLiquidity ;
+    "T", LastLiquidityInd.RemovedLiquidity
   ]

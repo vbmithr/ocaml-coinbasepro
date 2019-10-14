@@ -1,4 +1,5 @@
 open Coinbasepro
+open Fixtypes
 
 type auth = {
   key : string ;
@@ -46,9 +47,9 @@ type order = {
   size : float option ;
   remaining_size : float option ;
   price : float option ;
-  side : [`Buy | `Sell] ;
-  ord_type : [`Limit | `Market] option ;
-  ord_status : [`Filled | `Canceled] option ;
+  side : Side.t ;
+  ord_type : OrdType.t option ;
+  ord_status : OrdStatus.t option ;
   funds : float option ;
 } [@@deriving sexp]
 
@@ -61,7 +62,7 @@ type ord_match = {
   trade_id : int64 ;
   maker_order_id : Uuidm.t ;
   taker_order_id : Uuidm.t ;
-  side : [`Buy | `Sell] ;
+  side : Side.t ;
   size : float ;
   price : float ;
 } [@@deriving sexp]
@@ -76,7 +77,7 @@ type change = {
   new_funds : float option ;
   old_funds : float option ;
   price : float option ;
-  side : [`Buy | `Sell] ;
+  side : Side.t ;
 } [@@deriving sexp]
 
 type lvl = { price: float; size: float } [@@deriving sexp]
@@ -90,7 +91,7 @@ type l2snapshot = {
 type l2update = {
   ts : Ptime.t ;
   product_id : string ;
-  changes : ([`Buy | `Sell] * lvl) list ;
+  changes : (Side.t * lvl) list ;
 } [@@deriving sexp]
 
 type error = {

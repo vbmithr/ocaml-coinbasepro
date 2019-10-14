@@ -7,7 +7,7 @@ open Coinbasepro_ws
 let src = Logs.Src.create "coinbasepro.ws-test"
     ~doc:"Coinbasepro API - WS test application"
 
-let process_user_cmd ?auth w =
+let process_user_cmd ~sandbox ?auth w =
   let process s =
     match String.split s ~on:' ' with
     (* | "unsubscribe" :: chanid :: _ ->
@@ -30,7 +30,22 @@ let process_user_cmd ?auth w =
       Pipe.write w (Subscribe (None, [full products]))
     | "full_auth" :: products ->
       let products = List.map ~f:Pair.of_string_exn products in
-      Pipe.write w (Subscribe (auth, [full products]))
+      Pipe.write w (Subscribe (Option.map ~f:fst auth, [full products]))
+    | "orders" :: _ ->
+      Fastrest.request ?auth:(Option.map ~f:snd auth)
+        (Coinbasepro_rest.Order.get_all ~sandbox ()) >>= fun os ->
+      let os = Or_error.ok_exn os in
+      Deferred.List.iter os ~f:begin fun o ->
+        Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.Order.sexp_of_t o))
+      end
+    | "fills" :: pairs ->
+      Fastrest.request ?auth:(Option.map ~f:snd auth)
+        (Coinbasepro_rest.Fill.get ~sandbox
+           (`ProductID (List.map ~f:Pair.of_string_exn pairs))) >>= fun fills ->
+      let fills = Or_error.ok_exn fills in
+      Deferred.List.iter fills ~f:begin fun fi ->
+        Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.Fill.sexp_of_t fi))
+      end
     | _ ->
       Logs_async.err ~src (fun m -> m "Non Empty command")
   in
@@ -46,17 +61,19 @@ let main cfg sandbox =
       (List.Assoc.find cfg "CBPRO" ~equal:String.equal)
       ~f:begin fun cfg ->
         let timestamp = Time_ns.(now () |> to_span_since_epoch |> Span.to_int_ms |> fun a -> a // 1000 |> Float.to_string) in
+        let secret = Base64.decode_exn cfg.Bs_devkit.Cfg.secret in
         auth
           ~timestamp
-          ~key:cfg.Bs_devkit.Cfg.key
-          ~secret:(Base64.decode_exn cfg.secret)
-          ~passphrase:cfg.passphrase
+          ~key:cfg.key
+          ~secret
+          ~passphrase:cfg.passphrase,
+        { Fastrest.key = cfg.key ; secret ; meta = ["passphrase", cfg.passphrase] }
       end in
   Coinbasepro_ws_async.with_connection_exn ~sandbox begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [
-      process_user_cmd ?auth w ;
+      process_user_cmd ~sandbox ?auth w ;
       Pipe.iter r ~f:log_incoming
     ]
   end

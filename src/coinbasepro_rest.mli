@@ -62,7 +62,7 @@ and ledger_type =
 and details = {
   order_id: Uuidm.t ;
   trade_id: int64 ;
-  product_id: string ;
+  product_id: Pair.t ;
 } [@@deriving sexp]
 
 val ledger_encoding : ledger Json_encoding.encoding
@@ -92,5 +92,52 @@ type stp =
   | CancelOldest
   | CancelNewest
   | CancelBoth
+[@@deriving sexp_of]
 
 val stp_encoding : stp Json_encoding.encoding
+
+open Fixtypes
+
+module Order : sig
+  type t = {
+    id: Uuidm.t ;
+    price: float ;
+    size: float ;
+    product_id: Pair.t ;
+    side: Side.t ;
+    stp: stp ;
+    typ: OrdType.t ;
+    time_in_force: TimeInForce.t ;
+    post_only: bool ;
+    created_at: Ptime.t ;
+    fill_fees: float ;
+    filled_size: float ;
+    executed_value: float ;
+    status: OrdStatus.t ;
+    settled: bool ;
+  } [@@deriving sexp_of]
+
+  val encoding : t Json_encoding.encoding
+  val get_all : ?sandbox:bool -> unit -> (form, t list) service
+  val get : ?sandbox:bool -> [`Client of Uuidm.t | `Server of Uuidm.t] -> (form, t) service
+end
+
+module Fill : sig
+  type t = {
+    trade_id: int64 ;
+    product_id: Pair.t ;
+    price: float ;
+    size: float ;
+    order_id: Uuidm.t ;
+    created_at: Ptime.t ;
+    liquidity: LastLiquidityInd.t ;
+    fee: float ;
+    settled: bool ;
+    side: Side.t ;
+  } [@@deriving sexp_of]
+
+  val encoding : t Json_encoding.encoding
+  val get : ?sandbox:bool ->
+    [`OrderID of Uuidm.t list | `ProductID of Pair.t list ] ->
+    (form, t list) service
+end

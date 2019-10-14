@@ -3,7 +3,14 @@
  (public_name coinbasepro)
  (modules coinbasepro)
  (preprocess (pps ppx_sexp_conv))
- (libraries hex ptime uuidm uri ezjsonm ocplib-json-typed))
+ (libraries
+   fixtypes
+   hex
+   ptime
+   uuidm
+   uri
+   ezjsonm
+   ocplib-json-typed))
 
 (library
  (name        coinbasepro_rest)
@@ -11,24 +18,38 @@
  (modules coinbasepro_rest)
  (preprocess (pps ppx_sexp_conv))
  (libraries
-  coinbasepro
-  sexplib
-  uuidm
-  uri
-  logs-async
-  ocplib-json-typed
-  fastrest))
+   coinbasepro
+   sexplib
+   uuidm
+   uri
+   logs-async
+   ocplib-json-typed
+   fastrest
+   fixtypes))
 
 (library
  (name        coinbasepro_ws)
  (public_name coinbasepro-ws)
  (modules coinbasepro_ws)
  (preprocess (pps ppx_sexp_conv))
- (libraries coinbasepro ptime base64 digestif.c uuidm uri ocplib-json-typed))
+ (libraries
+   coinbasepro
+   ptime
+   base64
+   digestif.c
+   uuidm
+   uri
+   ocplib-json-typed
+   fixtypes))
 
 (library
  (name        coinbasepro_ws_async)
  (public_name coinbasepro-ws-async)
  (modules coinbasepro_ws_async)
  (preprocess (pps ppx_sexp_conv))
- (libraries ezjsonm coinbasepro_ws core async fastws-async))
+ (libraries
+   ezjsonm
+   coinbasepro_ws
+   core
+   async
+   fastws-async))

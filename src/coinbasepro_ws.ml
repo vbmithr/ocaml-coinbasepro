@@ -1,4 +1,5 @@
 open Sexplib.Std
+open Fixtypes
 open Coinbasepro
 
 type channel =
@@ -127,31 +128,17 @@ type order = {
   size : float option ;
   remaining_size : float option ;
   price : float option ;
-  side : [`Buy | `Sell] ;
-  ord_type : [`Limit | `Market] option ;
-  ord_status : [`Filled | `Canceled] option ;
+  side : Side.t ;
+  ord_type : OrdType.t option ;
+  ord_status : OrdStatus.t option ;
   funds : float option ;
 } [@@deriving sexp]
-
-let side_encoding =
-  let open Json_encoding in
-  string_enum [
-    "buy", `Buy ;
-    "sell", `Sell ;
-  ]
-
-let ord_type_encoding =
-  let open Json_encoding in
-  string_enum [
-    "limit", `Limit ;
-    "market", `Market ;
-  ]
 
 let ord_status_encoding =
   let open Json_encoding in
   string_enum [
-    "filled", `Filled ;
-    "canceled", `Canceled ;
+    "filled", OrdStatus.Filled ;
+    "canceled", OrdStatus.Canceled ;
   ]
 
 let or_empty_string encoding =
@@ -195,7 +182,7 @@ type ord_match = {
   trade_id : int64 ;
   maker_order_id : Uuidm.t ;
   taker_order_id : Uuidm.t ;
-  side : [`Buy | `Sell] ;
+  side : Side.t ;
   size : float ;
   price : float ;
 } [@@deriving sexp]
@@ -232,7 +219,7 @@ type change = {
   new_funds : float option ;
   old_funds : float option ;
   price : float option ;
-  side : [`Buy | `Sell] ;
+  side : Side.t ;
 } [@@deriving sexp]
 
 let change_encoding =
@@ -293,7 +280,7 @@ let l2snapshot_encoding =
 type l2update = {
   ts : Ptime.t ;
   product_id : string ;
-  changes : ([`Buy | `Sell] * lvl) list ;
+  changes : (Side.t * lvl) list ;
 } [@@deriving sexp]
 
 let l2update_encoding =

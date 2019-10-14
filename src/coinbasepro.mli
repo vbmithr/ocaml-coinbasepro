@@ -39,4 +39,11 @@ module Uuidm : sig
   val encoding : t Json_encoding.encoding
 end
 
+open Fixtypes
+
 val strfloat : float Json_encoding.encoding
+val side_encoding : Side.t Json_encoding.encoding
+val ord_type_encoding : OrdType.t Json_encoding.encoding
+val time_in_force_encoding : TimeInForce.t Json_encoding.encoding
+val ord_status_encoding : OrdStatus.t Json_encoding.encoding
+val liquidity_encoding : LastLiquidityInd.t Json_encoding.encoding
