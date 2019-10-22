@@ -25,8 +25,7 @@ module Ptime : sig
     with type t = Ptime.t
      and type span = Ptime.span
 
-  val t_of_sexp : Sexplib.Sexp.t -> t
-  val sexp_of_t : t -> Sexplib.Sexp.t
+  include Sexplib0.Sexpable.S with type t = Ptime.t
   val encoding : t Json_encoding.encoding
 end
 
@@ -34,8 +33,7 @@ module Uuidm : sig
   include module type of Uuidm
     with type t = Uuidm.t
 
-  val t_of_sexp : Sexplib.Sexp.t -> t
-  val sexp_of_t : t -> Sexplib.Sexp.t
+  include Sexplib0.Sexpable.S with type t = Uuidm.t
   val encoding : t Json_encoding.encoding
 end
 
