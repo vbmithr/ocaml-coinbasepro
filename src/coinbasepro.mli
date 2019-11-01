@@ -40,6 +40,7 @@ end
 open Fixtypes
 
 val strfloat : float Json_encoding.encoding
+val strint53 : int64 Json_encoding.encoding
 val side_encoding : Side.t Json_encoding.encoding
 val ord_type_encoding : OrdType.t Json_encoding.encoding
 val time_in_force_encoding : TimeInForce.t Json_encoding.encoding

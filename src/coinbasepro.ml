@@ -98,6 +98,12 @@ let strfloat =
     case string (fun s -> Some (string_of_float s)) float_of_string ;
   ]
 
+let strint53 =
+  union [
+    case int53 (fun s -> Some s) (fun s -> s) ;
+    case string (fun s -> Some (Int64.to_string s)) Int64.of_string ;
+  ]
+
 let side_encoding =
   string_enum [
     "buy", Side.Buy ;

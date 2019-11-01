@@ -214,7 +214,7 @@ let ledger_encoding =
     (fun (id, created_at, amount, balance, typ, details) ->
        { id; created_at; amount; balance; typ; details })
     (obj6
-       (req "id" int53)
+       (req "id" strint53)
        (req "created_at" Ptime.encoding)
        (req "amount" strfloat)
        (req "balance" strfloat)
