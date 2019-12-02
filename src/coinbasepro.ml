@@ -1,17 +1,23 @@
 open Sexplib.Std
 
 module Pair = struct
-  type t = {
-    base: string ;
-    quote: string ;
-  } [@@deriving sexp]
+  module T = struct
+    type t = {
+      base: string ;
+      quote: string ;
+    } [@@deriving sexp]
+
+    let compare { base ; quote } { base = base' ; quote = quote' } =
+      match String.compare base base' with
+      | 0 -> String.compare quote quote'
+      | n -> n
+
+    let hash = Hashtbl.hash
+  end
+
+  include T
 
   let create ~base ~quote = { base ; quote }
-
-  let compare { base ; quote } { base = base' ; quote = quote' } =
-    match String.compare base base' with
-    | 0 -> String.compare quote quote'
-    | n -> n
 
   let equal a b = compare a b = 0
 
@@ -33,6 +39,9 @@ module Pair = struct
 
   let encoding =
     Json_encoding.(conv to_string of_string_exn string)
+
+  module Set = Set.Make(T)
+  module Map = Map.Make(T)
 end
 
 module Ezjsonm_encoding = struct

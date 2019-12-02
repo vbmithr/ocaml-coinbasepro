@@ -34,13 +34,13 @@ val level2 : Pair.t list -> channel_full
 type heartbeat = {
   sequence: int64 ;
   last_trade_id: int64 ;
-  product_id: string ;
+  product_id: Pair.t ;
   time: Ptime.t ;
 } [@@deriving sexp]
 
 type order = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   sequence : int64 ;
   order_id : Uuidm.t ;
   client_oid : Uuidm.t option ;
@@ -57,7 +57,7 @@ val order_encoding : order Json_encoding.encoding
 
 type ord_match = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   sequence : int64 ;
   trade_id : int64 ;
   maker_order_id : Uuidm.t ;
@@ -71,7 +71,7 @@ type change = {
   ts : Ptime.t ;
   sequence : int64 ;
   order_id : Uuidm.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   new_size : float option ;
   old_size : float option ;
   new_funds : float option ;
@@ -83,14 +83,14 @@ type change = {
 type lvl = { price: float; size: float } [@@deriving sexp]
 
 type l2snapshot = {
-  product_id : string ;
+  product_id : Pair.t ;
   bids : lvl list ;
   asks : lvl list ;
 } [@@deriving sexp]
 
 type l2update = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   changes : (Side.t * lvl) list ;
 } [@@deriving sexp]
 

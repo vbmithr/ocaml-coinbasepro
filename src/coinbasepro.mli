@@ -12,12 +12,16 @@ module Pair : sig
   val create : base:string -> quote:string -> t
   val compare : t -> t -> int
   val equal : t -> t -> bool
+  val hash : t -> int
 
   val pp : Format.formatter -> t -> unit
   val to_string : t -> string
   val of_string : string -> t option
   val of_string_exn : string -> t
   val encoding : t Json_encoding.encoding
+
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
 end
 
 module Ptime : sig

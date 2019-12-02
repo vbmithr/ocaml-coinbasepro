@@ -54,7 +54,7 @@ let channel_full_encoding =
 type heartbeat = {
   sequence: int64 ;
   last_trade_id: int64 ;
-  product_id: string ;
+  product_id: Pair.t ;
   time: Ptime.t ;
 } [@@deriving sexp]
 
@@ -68,7 +68,7 @@ let heartbeat_encoding =
     (obj4
        (req "sequence" int53)
        (req "last_trade_id" int53)
-       (req "product_id" string)
+       (req "product_id" Pair.encoding)
        (req "time" Ptime.encoding))
 
 type auth = {
@@ -105,7 +105,7 @@ let subscription_encoding =
     (fun chans -> ([], chans))
     (fun (_, a) -> a)
     (obj2
-       (dft "product_ids" (list string) [])
+       (dft "product_ids" (list Pair.encoding) [])
        (req "channels" (list channel_full_encoding)))
 
 let authed_subscription_encoding =
@@ -121,7 +121,7 @@ let authed_subscription_encoding =
 
 type order = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   sequence : int64 ;
   order_id : Uuidm.t ;
   client_oid : Uuidm.t option ;
@@ -162,7 +162,7 @@ let order_encoding =
     (merge_objs
        (obj10
           (req "time" Ptime.encoding)
-          (req "product_id" string)
+          (req "product_id" Pair.encoding)
           (req "sequence" int53)
           (req "order_id" Uuidm.encoding)
           (opt "size" strfloat)
@@ -177,7 +177,7 @@ let order_encoding =
 
 type ord_match = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   sequence : int64 ;
   trade_id : int64 ;
   maker_order_id : Uuidm.t ;
@@ -200,7 +200,7 @@ let ord_match_encoding =
         maker_order_id ; taker_order_id ; side ; size ; price })
     (obj9
        (req "time" Ptime.encoding)
-       (req "product_id" string)
+       (req "product_id" Pair.encoding)
        (req "sequence" int53)
        (req "trade_id" int53)
        (req "maker_order_id" Uuidm.encoding)
@@ -213,7 +213,7 @@ type change = {
   ts : Ptime.t ;
   sequence : int64 ;
   order_id : Uuidm.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   new_size : float option ;
   old_size : float option ;
   new_funds : float option ;
@@ -237,7 +237,7 @@ let change_encoding =
        (req "time" Ptime.encoding)
        (req "sequence" int53)
        (req "order_id" Uuidm.encoding)
-       (req "product_id" string)
+       (req "product_id" Pair.encoding)
        (opt "new_size" strfloat)
        (opt "old_size" strfloat)
        (opt "new_funds" strfloat)
@@ -262,7 +262,7 @@ let side_lvl_encoding =
     (tup3 side_encoding strfloat strfloat)
 
 type l2snapshot = {
-  product_id : string ;
+  product_id : Pair.t ;
   bids : lvl list ;
   asks : lvl list ;
 } [@@deriving sexp]
@@ -273,13 +273,13 @@ let l2snapshot_encoding =
     (fun { product_id ; bids ; asks } -> (product_id, bids, asks))
     (fun (product_id, bids, asks) -> { product_id ; bids ; asks })
     (obj3
-       (req "product_id" string)
+       (req "product_id" Pair.encoding)
        (req "bids" (list lvl_encoding))
        (req "asks" (list lvl_encoding)))
 
 type l2update = {
   ts : Ptime.t ;
-  product_id : string ;
+  product_id : Pair.t ;
   changes : (Side.t * lvl) list ;
 } [@@deriving sexp]
 
@@ -290,7 +290,7 @@ let l2update_encoding =
     (fun (ts, product_id, changes) -> { ts ; product_id ; changes })
     (obj3
        (req "time" Ptime.encoding)
-       (req "product_id" string)
+       (req "product_id" Pair.encoding)
        (req "changes" (list side_lvl_encoding)))
 
 type error = {
