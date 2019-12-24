@@ -14,26 +14,26 @@ module T = struct
   type t = {
     r: Coinbasepro_ws.t Pipe.Reader.t ;
     w: Coinbasepro_ws.t Pipe.Writer.t ;
-    cleaned_up: unit Deferred.t ;
   }
 
-  let create r w cleaned_up = { r; w; cleaned_up }
+  let create r w = { r; w }
 
-  module Address = struct
-    include Uri_sexp
-    let equal = Uri.equal
-  end
+  module Address = Uri_sexp
 
-  let is_closed { r; _ } = Pipe.is_closed r
-  let close { r; w; cleaned_up } =
-    Pipe.close w ; Pipe.close_read r ; cleaned_up
-  let close_finished { cleaned_up; _ } = cleaned_up
+  let is_closed { r; w } = Pipe.(is_closed r && is_closed w)
+  let close { r; w } =
+    Pipe.close w ;
+    Pipe.close_read r ;
+    Deferred.unit
+  let close_finished { r; w } =
+    Deferred.all_unit [Pipe.closed r;
+                       Pipe.closed w]
 end
 include T
 
 let connect url =
   Deferred.Or_error.map (Fastws_async.EZ.connect url)
-    ~f:begin fun { r; w; cleaned_up } ->
+    ~f:begin fun { r; w; _ } ->
       let client_read = Pipe.map r ~f:begin fun msg ->
           Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
         end in
@@ -49,7 +49,7 @@ let connect url =
         Log.debug (fun m -> m "-> %s" doc) ;
         doc
       end ;
-      create client_read client_write cleaned_up
+      create client_read client_write
     end
 
 module Persistent = struct

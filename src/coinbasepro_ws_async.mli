@@ -7,7 +7,6 @@ val sandbox_url : Uri.t
 type t = {
   r: Coinbasepro_ws.t Pipe.Reader.t ;
   w: Coinbasepro_ws.t Pipe.Writer.t ;
-  cleaned_up: unit Deferred.t ;
 }
 
 val connect : Uri.t -> t Deferred.Or_error.t
