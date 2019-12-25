@@ -37,18 +37,17 @@ let connect url =
       let client_read = Pipe.map r ~f:begin fun msg ->
           Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
         end in
-      let ws_read, client_write = Pipe.create () in
-      don't_wait_for
-        (Pipe.closed client_write >>| fun () -> Pipe.close w) ;
-      don't_wait_for @@
-      Pipe.transfer ws_read w ~f:begin fun cmd ->
-        let doc =
-          match Ezjsonm_encoding.construct encoding cmd with
-          | `A _ | `O _ as a -> Ezjsonm.to_string a
-          | _ -> invalid_arg "not a json document" in
-        Log.debug (fun m -> m "-> %s" doc) ;
-        doc
-      end ;
+      let client_write = Pipe.create_writer begin fun ws_read ->
+          Pipe.transfer ws_read w ~f:begin fun cmd ->
+            let doc =
+              match Ezjsonm_encoding.construct encoding cmd with
+              | `A _ | `O _ as a -> Ezjsonm.to_string a
+              | _ -> invalid_arg "not a json document" in
+            Log.debug (fun m -> m "-> %s" doc) ;
+            doc
+          end
+        end in
+      (Pipe.closed client_write >>> fun () -> Pipe.close w) ;
       create client_read client_write
     end
 
