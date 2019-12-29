@@ -49,7 +49,7 @@ let mk_client_write w =
   end
 
 let connect url =
-  Deferred.Or_error.map (Fastws_async.EZ.connect url)
+  Deferred.Or_error.map (Fastws_async.connect url)
     ~f:begin fun { r; w; _ } ->
       let client_write = mk_client_write w in
       (Pipe.closed client_write >>> fun () -> Pipe.close w) ;
@@ -70,7 +70,7 @@ let connect_exn url =
 
 let with_connection ?(sandbox=false) f =
   let url = if sandbox then sandbox_url else url in
-  Fastws_async.EZ.with_connection url ~f:begin fun r w ->
+  Fastws_async.with_connection url ~f:begin fun r w ->
     f (mk_client_read r) (mk_client_write w)
   end
 
