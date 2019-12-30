@@ -84,7 +84,8 @@ let main cfg sandbox =
           ~passphrase:cfg.passphrase,
         { Fastrest.key = cfg.key ; secret ; meta = ["passphrase", cfg.passphrase] }
       end in
-  Coinbasepro_ws_async.with_connection_exn ~sandbox begin fun r w ->
+  let url = if sandbox then url_sandbox else url in
+  Fastws_async.with_connection ~of_string ~to_string url begin fun _ r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

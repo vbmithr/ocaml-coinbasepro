@@ -41,15 +41,3 @@
    uri
    ocplib-json-typed
    fixtypes))
-
-(library
- (name        coinbasepro_ws_async)
- (public_name coinbasepro-ws-async)
- (modules coinbasepro_ws_async)
- (preprocess (pps ppx_sexp_conv))
- (libraries
-   ezjsonm
-   coinbasepro_ws
-   core
-   async
-   fastws-async))

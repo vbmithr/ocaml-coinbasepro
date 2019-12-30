@@ -2,6 +2,9 @@ open Sexplib.Std
 open Fixtypes
 open Coinbasepro
 
+let url = Uri.make ~scheme:"https" ~host:"ws-feed.pro.coinbase.com" ()
+let url_sandbox = Uri.make ~scheme:"https" ~host:"ws-feed-public.sandbox.pro.coinbase.com" ()
+
 type channel =
   | Heartbeat
   | Ticker
@@ -410,4 +413,12 @@ let encoding =
     case l2update_e (function L2Update t -> Some ((), t) | _ -> None) (fun ((), t) -> L2Update t) ;
     case error_e (function Error t -> Some ((), t) | _ -> None) (fun ((), t) -> Error t) ;
   ]
+
+let of_string msg =
+  Ezjsonm_encoding.destruct_safe encoding (Ezjsonm.from_string msg)
+
+let to_string t =
+  match Ezjsonm_encoding.construct encoding t with
+  | `A _ | `O _ as a -> Ezjsonm.to_string a
+  | #Json_repr.ezjsonm -> assert false
 

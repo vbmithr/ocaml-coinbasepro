@@ -8,10 +8,8 @@ open Coinbasepro_ws
 let src = Logs.Src.create "coinbasepro.depth"
     ~doc:"Coinbasepro API - depth test application"
 
-(* module UuidMap = Map.Make(Coinbasepro.Uuidm) *)
-
-let main (symbols : Pair.t list) =
-  Coinbasepro_ws_async.with_connection_exn begin fun r w ->
+let main (symbols : Pair.t list) : unit Deferred.t =
+  Fastws_async.with_connection ~of_string ~to_string url begin fun _ r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
     let msgq = Queue.create () in

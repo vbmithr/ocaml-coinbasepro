@@ -8,7 +8,7 @@ let src = Logs.Src.create "coinbasepro.depth2"
     ~doc:"Coinbasepro API - depth2 test application"
 
 let main symbols =
-  Coinbasepro_ws_async.with_connection_exn begin fun r w ->
+  Fastws_async.with_connection ~to_string ~of_string url begin fun _ r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
     let process_msgs msg =
@@ -35,9 +35,7 @@ let main symbols =
       | _ -> Deferred.unit
     in
     Pipe.write w (Subscribe (None, [level2 symbols])) >>= fun () ->
-    Deferred.all_unit [
-      Pipe.iter r ~f:process_msgs
-    ]
+    Pipe.iter r ~f:process_msgs
   end
 
 let () =

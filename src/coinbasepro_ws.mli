@@ -1,6 +1,9 @@
 open Coinbasepro
 open Fixtypes
 
+val url : Uri.t
+val url_sandbox : Uri.t
+
 type auth = {
   key : string ;
   passphrase : string ;
@@ -123,3 +126,6 @@ val has_seq_gt : int64 -> t -> bool
 
 val pp : Format.formatter -> t -> unit
 val encoding : t Json_encoding.encoding
+
+val of_string : string -> t
+val to_string : t -> string
