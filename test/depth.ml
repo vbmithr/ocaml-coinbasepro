@@ -9,7 +9,7 @@ let src = Logs.Src.create "coinbasepro.depth"
     ~doc:"Coinbasepro API - depth test application"
 
 let main (symbols : Pair.t list) : unit Deferred.t =
-  Fastws_async.with_connection ~of_string ~to_string url begin fun _ r w ->
+  Fastws_async.with_connection ~of_string ~to_string url begin fun r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
     let msgq = Queue.create () in
@@ -32,23 +32,21 @@ let main (symbols : Pair.t list) : unit Deferred.t =
     in
     let init_books () =
       Ivar.read start_init >>= fun () ->
-      Fastrest.request (book (List.hd_exn symbols)) >>= function
-      | Error _ -> failwith "could not get orderbook"
-      | Ok { sequence ; bids ; asks } ->
-        (* Discard msgs from msgq where sequence is leq than snapshot
-           sequence *)
-        let msgq = Queue.filter msgq ~f:(has_seq_gt sequence) in
-        let bids' = List.fold_left bids ~init:Float.Map.empty ~f:begin fun a ({ price ; _ } as data) ->
+      Fastrest.request (book (List.hd_exn symbols)) >>= fun { sequence ; bids ; asks } ->
+      (* Discard msgs from msgq where sequence is leq than snapshot
+         sequence *)
+      let msgq = Queue.filter msgq ~f:(has_seq_gt sequence) in
+      let bids' = List.fold_left bids ~init:Float.Map.empty ~f:begin fun a ({ price ; _ } as data) ->
           Float.Map.add_multi a ~key:price ~data
-          end in
-        let asks' = List.fold_left asks ~init:Float.Map.empty ~f:begin fun a ({ price ; _ } as data) ->
+        end in
+      let asks' = List.fold_left asks ~init:Float.Map.empty ~f:begin fun a ({ price ; _ } as data) ->
           Float.Map.add_multi a ~key:price ~data
-          end in
-        obids := bids' ;
-        oasks := asks' ;
-        Queue.iter msgq ~f:update_books ;
-        Ivar.fill inited () ;
-        Deferred.unit in
+        end in
+      obids := bids' ;
+      oasks := asks' ;
+      Queue.iter msgq ~f:update_books ;
+      Ivar.fill inited () ;
+      Deferred.unit in
     let process_msgs = function
       | Subscribe _
       | Unsubscribe _ -> Deferred.unit

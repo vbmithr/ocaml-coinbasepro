@@ -34,7 +34,6 @@ let process_user_cmd ~sandbox ?auth w =
     | "orders" :: _ ->
       Fastrest.request ?auth:(Option.map ~f:snd auth)
         (Coinbasepro_rest.Order.get_all ~sandbox ()) >>= fun os ->
-      let os = Or_error.ok_exn os in
       Deferred.List.iter os ~f:begin fun o ->
         Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.Order.sexp_of_t o))
       end
@@ -42,14 +41,12 @@ let process_user_cmd ~sandbox ?auth w =
       Fastrest.request ?auth:(Option.map ~f:snd auth)
         (Coinbasepro_rest.Fill.get ~sandbox
            (`ProductID (List.map ~f:Pair.of_string_exn pairs))) >>= fun fills ->
-      let fills = Or_error.ok_exn fills in
       Deferred.List.iter fills ~f:begin fun fi ->
         Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.Fill.sexp_of_t fi))
       end
     | "accounts" :: _ ->
       Fastrest.request ?auth:(Option.map ~f:snd auth)
         (Coinbasepro_rest.accounts ~sandbox ()) >>= fun accounts ->
-      let accounts = Or_error.ok_exn accounts in
       Deferred.List.iter accounts ~f:begin fun a ->
         Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.sexp_of_account a))
       end
@@ -57,7 +54,6 @@ let process_user_cmd ~sandbox ?auth w =
       let id = Option.value_exn (Uuidm.of_string id) in
       Fastrest.request ?auth:(Option.map ~f:snd auth)
         (Coinbasepro_rest.ledger ~sandbox id) >>= fun entries ->
-      let entries = Or_error.ok_exn entries in
       Deferred.List.iter entries ~f:begin fun a ->
         Logs_async.app ~src (fun m -> m "%a" Sexp.pp (Coinbasepro_rest.sexp_of_ledger a))
       end
@@ -85,7 +81,7 @@ let main cfg sandbox =
         { Fastrest.key = cfg.key ; secret ; meta = ["passphrase", cfg.passphrase] }
       end in
   let url = if sandbox then url_sandbox else url in
-  Fastws_async.with_connection ~of_string ~to_string url begin fun _ r w ->
+  Fastws_async.with_connection ~of_string ~to_string url begin fun r w ->
     let log_incoming msg =
       Logs_async.debug ~src (fun m -> m "%a" pp msg) in
     Deferred.all_unit [

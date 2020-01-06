@@ -34,9 +34,7 @@ let wrap_request
     ?(timeout=Time.Span.of_int_sec 5)
     ?(speed=`Quick) n service =
   Alcotest_async.test_case ~timeout n speed begin fun () ->
-    (Fastrest.request ~auth service) |>
-    Deferred.Or_error.ignore |>
-    Deferred.Or_error.ok_exn
+    Deferred.ignore_m (Fastrest.request ~auth service)
   end
 
 let wrap_request_light
@@ -51,7 +49,7 @@ let wrap_request_light
 let test_later = ref []
 
 let accounts_full () =
-  Fastrest.request ~auth (accounts ~sandbox:true ()) >>=? fun accts ->
+  Fastrest.request ~auth (accounts ~sandbox:true ()) >>= fun accts ->
   test_later := [
     "ledgers", (List.map accts ~f:begin fun a ->
         wrap_request ~timeout:(Time.Span.of_int_sec 10)

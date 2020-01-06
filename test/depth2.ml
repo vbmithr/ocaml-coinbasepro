@@ -8,7 +8,7 @@ let src = Logs.Src.create "coinbasepro.depth2"
     ~doc:"Coinbasepro API - depth2 test application"
 
 let main symbols =
-  Fastws_async.with_connection ~to_string ~of_string url begin fun _ r w ->
+  Fastws_async.with_connection ~to_string ~of_string url begin fun r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in
     let process_msgs msg =
