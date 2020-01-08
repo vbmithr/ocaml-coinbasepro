@@ -64,13 +64,13 @@ module Ptime = struct
     | _ -> invalid_arg "Ptime.t_of_sexp"
 
   let sexp_of_t t =
-    sexp_of_string (to_rfc3339 t)
+    sexp_of_string (to_rfc3339 ~frac_s:6 t)
 
   let encoding =
     let open Json_encoding in
     conv
-      (fun t -> Ptime.to_rfc3339 t)
-      (fun ts -> match Ptime.of_rfc3339 ts with
+      (fun _ -> assert false)
+      (fun ts -> match of_rfc3339 ts with
          | Error _ -> invalid_arg "Ptime.encoding"
          | Ok (t, _, _) -> t)
       string
