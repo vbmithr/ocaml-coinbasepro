@@ -18,6 +18,8 @@
  (modules coinbasepro_rest)
  (preprocess (pps ppx_sexp_conv))
  (libraries
+   base64
+   digestif
    coinbasepro
    sexplib
    uuidm
