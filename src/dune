@@ -5,11 +5,8 @@
  (preprocess (pps ppx_sexp_conv))
  (libraries
    fixtypes
-   hex
    ptime
    uuidm
-   uri
-   ezjsonm
    ocplib-json-typed))
 
 (library
@@ -21,10 +18,9 @@
    base64
    digestif
    coinbasepro
-   sexplib
+   core
    uuidm
    uri
-   logs-async
    ocplib-json-typed
    fastrest
    fixtypes))
@@ -35,6 +31,8 @@
  (modules coinbasepro_ws)
  (preprocess (pps ppx_sexp_conv))
  (libraries
+   sexplib
+   ezjsonm
    coinbasepro
    ptime
    base64

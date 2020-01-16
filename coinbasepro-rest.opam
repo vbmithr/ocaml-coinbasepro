@@ -1,0 +1,24 @@
+opam-version: "2.0"
+authors: "Vincent Bernardoff <vb@luminar.eu.org>"
+maintainer: "Vincent Bernardoff <vb@luminar.eu.org>"
+homepage: "https://github.com/vbmithr/ocaml-coinbasepro"
+bug-reports: "https://github.com/vbmithr/ocaml-coinbasepro/issues"
+dev-repo: "git+https://github.com/vbmithr/ocaml-coinbasepro"
+doc: "https://vbmithr.github.io/ocaml-coinbasepro/doc"
+build: [ "dune" "build" "-j" jobs "-p" name ]
+run-test: [ "dune" "runtest" "-j" jobs "-p" name ]
+depends: [
+  "dune" {>= "1.11.4"}
+  "coinbasepro" {= version}
+  "fixtypes" {= version}
+  "fastrest" {= version}
+  "core" {>= "v0.12.4"}
+  "uri" {>= "3.1.0"}
+  "base64" {>= "3.2.0"}
+  "digestif" {>= "0.8.0"}
+  "uuidm" {>= "0.9.7"}
+  "ocplib-json-typed" {>= "0.7.1"}
+]
+synopsis: "CoinbasePro API"
+description: """
+"""
