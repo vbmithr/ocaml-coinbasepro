@@ -1,7 +1,6 @@
 open Core
 open Async
 
-open Coinbasepro
 open Coinbasepro_rest
 
 module Cfg = struct
@@ -19,10 +18,6 @@ let default_cfg = Filename.concat (Option.value_exn (Sys.getenv "HOME")) ".virtu
 let cfg =
   List.Assoc.find_exn ~equal:String.equal
     (Sexplib.Sexp.load_sexp_conv_exn default_cfg Cfg.t_of_sexp) "CBPRO"
-
-let () =
-  Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-  Logs.set_level (Some Debug)
 
 let auth = {
   Fastrest.key = cfg.Cfg.key ;
@@ -64,11 +59,14 @@ let accounts_full () =
 
 let rest = [
   wrap_request "book"
-    (book ~sandbox:true (Pair.create ~base:"BTC" ~quote:"USD")) ;
+    (book ~sandbox:true
+       (Coinbasepro.Pair.create ~base:"BTC" ~quote:"USD")) ;
   wrap_request_light "accounts" accounts_full ;
 ]
 
 let () =
+  Logs.set_reporter (Logs_async_reporter.reporter ()) ;
+  Logs.set_level (Some Debug) ;
   Alcotest.run ~and_exit:false "coinbasepro" [
     "rest", rest ;
   ] ;

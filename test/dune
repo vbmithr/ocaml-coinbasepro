@@ -2,7 +2,7 @@
  (name ws)
  (modules ws)
  (public_name coinbasepro-ws-cli)
- (package coinbasepro-ws)
+ (package coinbasepro-bin)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    core
@@ -10,6 +10,7 @@
    fastws-async
    bs-devkit
    logs-async-reporter
+   coinbasepro
    coinbasepro-rest
    coinbasepro-ws))
 
@@ -17,13 +18,14 @@
  (name depth)
  (modules depth)
  (public_name coinbasepro-depth)
- (package coinbasepro-ws)
+ (package coinbasepro-bin)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    core
    async
    fastws-async
    logs-async-reporter
+   coinbasepro
    coinbasepro-rest
    coinbasepro-ws))
 
@@ -31,13 +33,14 @@
  (name depth2)
  (modules depth2)
  (public_name coinbasepro-depth2)
- (package coinbasepro-ws)
+ (package coinbasepro-bin)
  (preprocess (pps ppx_jane ppx_sexp_conv))
  (libraries
    core
    async
    fastws-async
    logs-async-reporter
+   coinbasepro
    coinbasepro-rest
    coinbasepro-ws))
 
@@ -45,8 +48,10 @@
  (name       test)
  (modules    test)
  (preprocess (pps ppx_jane ppx_sexp_conv))
+ (package coinbasepro-rest)
  (libraries
-   bs-devkit
+   coinbasepro
    coinbasepro-rest
+   alcotest
    alcotest-async
    logs-async-reporter))
