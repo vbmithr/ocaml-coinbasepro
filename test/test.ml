@@ -3,27 +3,14 @@ open Async
 
 open Coinbasepro_rest
 
-module Cfg = struct
-  type cfg = {
-    key: string ;
-    secret: string ;
-    passphrase: string [@default ""];
-    quote: (string * int) list [@default []];
-  } [@@deriving sexp]
-
-  type t = (string * cfg) list [@@deriving sexp]
-end
-
-let default_cfg = Filename.concat (Option.value_exn (Sys.getenv "HOME")) ".virtu"
-let cfg =
-  List.Assoc.find_exn ~equal:String.equal
-    (Sexplib.Sexp.load_sexp_conv_exn default_cfg Cfg.t_of_sexp) "CBPRO"
-
-let auth = {
-  Fastrest.key = cfg.Cfg.key ;
-  secret = Base64.decode_exn cfg.Cfg.secret ;
-  meta = ["passphrase", cfg.Cfg.passphrase] ;
-}
+let auth =
+  match String.split ~on:':' (Sys.getenv_exn "TOKEN_CBPRO") with
+  | [key; secret; passphrase] -> {
+      Fastrest.key ;
+      secret = Base64.decode_exn secret ;
+      meta = ["passphrase", passphrase] ;
+    }
+  | _ -> assert false
 
 let wrap_request
     ?(timeout=Time.Span.of_int_sec 5)
