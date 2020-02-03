@@ -24,7 +24,7 @@ let wrap_request_light
     ?(speed=`Quick) n f =
   Alcotest_async.test_case ~timeout n speed begin fun () ->
     f () |>
-    Deferred.Or_error.ignore |>
+    Deferred.Or_error.ignore_m |>
     Deferred.Or_error.ok_exn
   end
 
