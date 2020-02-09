@@ -8,6 +8,12 @@ let src = Logs.Src.create "coinbasepro.depth2"
     ~doc:"Coinbasepro API - depth2 test application"
 
 let main symbols =
+  let module Encoding = Json_encoding.Make(Json_repr.Yojson) in
+  let buf = Bi_outbuf.create 4096 in
+  let of_string s =
+    Encoding.destruct encoding (Yojson.Safe.from_string ~buf s) in
+  let to_string t =
+    Yojson.Safe.to_string ~buf (Encoding.construct encoding t) in
   Fastws_async.with_connection ~to_string ~of_string url begin fun r w ->
     let obids = ref Float.Map.empty in
     let oasks = ref Float.Map.empty in

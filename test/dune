@@ -23,6 +23,7 @@
  (libraries
    core
    async
+   yojson
    fastws-async
    logs-async-reporter
    coinbasepro
@@ -38,6 +39,7 @@
  (libraries
    core
    async
+   yojson
    fastws-async
    logs-async-reporter
    coinbasepro
