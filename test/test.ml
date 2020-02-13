@@ -1,7 +1,7 @@
 open Core
 open Async
-
 open Coinbasepro_rest
+open Alcotest_async
 
 let auth =
   match String.split ~on:':' (Sys.getenv_exn "TOKEN_CBPRO") with
@@ -15,14 +15,14 @@ let auth =
 let wrap_request
     ?(timeout=Time.Span.of_int_sec 5)
     ?(speed=`Quick) n service =
-  Alcotest_async.test_case ~timeout n speed begin fun () ->
+  test_case ~timeout n speed begin fun () ->
     Deferred.ignore_m (Fastrest.request ~auth service)
   end
 
 let wrap_request_light
     ?(timeout=Time.Span.of_int_sec 5)
     ?(speed=`Quick) n f =
-  Alcotest_async.test_case ~timeout n speed begin fun () ->
+  test_case ~timeout n speed begin fun () ->
     f () |>
     Deferred.Or_error.ignore_m |>
     Deferred.Or_error.ok_exn
@@ -51,10 +51,12 @@ let rest = [
   wrap_request_light "accounts" accounts_full ;
 ]
 
-let () =
-  Logs.set_reporter (Logs_async_reporter.reporter ()) ;
-  Logs.set_level (Some Debug) ;
-  Alcotest.run ~and_exit:false "coinbasepro" [
+let main () =
+  run ~and_exit:false "coinbasepro" [
     "rest", rest ;
-  ] ;
-  Alcotest.run "cbpro_later" !test_later
+  ] >>= fun () ->
+  run "cbpro_later" !test_later
+
+let () =
+  don't_wait_for (main ()) ;
+  never_returns (Scheduler.go ())

@@ -54,6 +54,4 @@
  (libraries
    coinbasepro
    coinbasepro-rest
-   alcotest
-   alcotest-async
-   logs-async-reporter))
+   alcotest-async))
