@@ -8,7 +8,6 @@
    core
    async
    fastws-async
-   bs-devkit
    logs-async-reporter
    coinbasepro
    coinbasepro-rest
